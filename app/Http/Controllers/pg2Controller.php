@@ -1,0 +1,757 @@
+<?php
+
+namespace App\Http\Controllers;
+use App\Services\ChagansPayment2Service;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use App\Jobs\ProcessPayinAfterDelay;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Request;
+
+class pg2Controller extends Controller
+{
+    /**
+     * Authenticate API Key (Local Auth)
+     */
+    public function localAuth($cgapi)
+    {
+        $remittance = DB::table('remittances')->where('apikey', $cgapi)->first();
+
+        if (!$remittance) {
+            response()->json([
+                'status'  => false,
+                'message' => 'Unauthorized or invalid API token.'
+            ], 401)->send();
+            exit;
+        }
+
+        return $remittance;
+    }
+
+    /**
+     * Create Payment Request API
+     */
+    public function pay(Request $request)
+    {
+       //return $request;die();
+        // ---------------------------------------------------------
+        // ✅ Step 1: Authenticate Business
+        // ---------------------------------------------------------
+        $remittance = $this->localAuth($request->input('apikey'));
+
+        // ---------------------------------------------------------
+        // 🔎 Log Request
+        // ---------------------------------------------------------
+        Log::channel('fundtransfer')->info("Fund Transfer Request", [
+            'ip'      => $request->ip(),
+            'payload' => $request->all()
+        ]);
+
+        $clientIp = $request->ip();
+
+        // ---------------------------------------------------------
+        // 🔐 IP Whitelisting Check
+        // ---------------------------------------------------------
+        $whitelistedIps = DB::table('remittances')
+            ->where('remId', $remittance->remId)
+            ->pluck('ipAddress')
+            ->toArray();
+
+        if (!in_array($clientIp, $whitelistedIps)) {
+
+            Log::warning("IP BLOCKED: {$clientIp} tried payout for remId {$remittance->remId}");
+
+            return response()->json([
+                'status'  => false,
+                'message' => "Access denied. Your IP ($clientIp) is not whitelisted."
+            ], 403);
+        }
+
+        if ($remittance->pgpayout2==0) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Payment Gateway pipe2 is not active on your account. Please contact Admin.'
+            ], 400);
+        }
+
+        // ---------------------------------------------------------
+        // 📌 Validate Input
+        // ---------------------------------------------------------
+      $validator = Validator::make($request->all(), [
+    'amount' => 'required|numeric|min:100',
+    'pgType' => 'required|string|max:20',
+    'RefNo'  => 'required|string|max:50',
+    'callbackUrl' => 'nullable|string'
+]);
+
+if ($validator->fails()) {
+    return response()->json([
+        'status'  => false,
+        'message' => 'Validation failed.',
+        'errors'  => $validator->errors()
+    ], 422);
+}
+
+// ✅ Get values
+$pgType = strtoupper($request->pgType);
+$amount = $request->amount;
+
+// ✅ PG Rules
+$pgMap = [
+    'CREDP1' => ['max' => 49999, 'gateway' => 'chagans'],
+    'CREDP2' => ['max' => 39999, 'gateway' => 'chagans1'],
+    'CREDP3' => ['max' => 29999, 'gateway' => 'chagans2'],
+];
+
+// ❌ Invalid PG Type
+if (!isset($pgMap[$pgType])) {
+    return response()->json([
+        'status' => false,
+        'message' => 'Invalid PG Type'
+    ], 400);
+}
+
+// ❌ Amount Limit Check
+if ($amount > $pgMap[$pgType]['max']) {
+    return response()->json([
+        'status' => false,
+        'message' => "Amount exceeds limit for $pgType. Max allowed is ₹".$pgMap[$pgType]['max']
+    ], 400);
+}
+
+// ✅ Replace PG Type with Gateway Name
+$finalPg = $pgMap[$pgType]['gateway'];
+
+// 👉 Ab yaha use karo
+// $finalPg = chagans / chagans1 / chagans2
+
+           $package = DB::table('packages')->where('id',$remittance->packageId)->first();
+            if(!$package || $package->status != 1){
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Assigned Package is Inactive. Please contact Admin.',
+                ], 400);
+            }
+             // Fetch local commissions for the remittance package
+        $commissions = DB::table('commissions')
+            ->where('packagesId', $remittance->packageId)
+            ->where('service', 'PAYINP2')
+            ->get() ?? [];
+
+      if ($commissions->isEmpty()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'No commission structure found for your package. Please contact Admin.'
+            ], 400);
+        }
+
+        // ---------------------------------------------------------
+        // 🔁 Duplicate RefNo Check
+        // ---------------------------------------------------------
+        $existingTxn = DB::table('pgmanage2')
+            ->where('remId', $remittance->remId)
+            ->where('refId', $request->RefNo)
+            ->first();
+
+        if ($existingTxn) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Duplicate RefNo. Transaction with this RefNo already exists.'
+            ], 409);
+        }
+
+        // ---------------------------------------------------------
+        // 🆕 Create Local Transaction (DB Insert)
+        // ---------------------------------------------------------
+        $txnId = uniqid("TXN");
+
+        DB::table('pgmanage2')->insert([
+            'remId'        => $remittance->remId,
+            'refId'        => $request->RefNo,
+            'txnId'        => $txnId,
+            'amount'       => $request->amount,
+            'pgType'       => $request->pgType,
+            'status'       => 'PENDING',
+            'callbackUrl'  => $request->callbackUrl ?? null,
+            'initiate_ip'  => $clientIp,
+            'created_at'   => now(),
+            'updated_at'   => now()
+        ]);
+
+        // ---------------------------------------------------------
+        // 🚀 Step 2: Initiate Payment Using Service Class
+        // ---------------------------------------------------------
+        $pg = new ChagansPayment2Service();
+
+       // return $pg;
+
+        $response = $pg->createPaymentRequest(
+            amount: $request->amount,
+            pgType: $finalPg,
+            txnId: $txnId,
+            callback:$request->callbackUrl,
+            webhook:"https://api.credxpay.com/api/dynamic/v2/pg/callback",
+        );
+
+        // ---------------------------------------------------------
+        // 📌 Update PG Response in DB
+        // ---------------------------------------------------------
+        DB::table('pgmanage2')
+            ->where('txnId', $txnId)
+            ->update([
+                'responseData' => json_encode($response),
+                'updated_at'   => now(),
+                'orderId' =>$response['data']['data']['orderId'] ?? 'N/A'
+            ]);
+
+        // ---------------------------------------------------------
+        // 📌 Return Response
+        // ---------------------------------------------------------
+        return response()->json($response);
+    }
+
+    /**
+ * Check Payment Status API
+ */ 
+public function status(Request $request)
+{
+    // -----------------------------
+    // 📌 Validate Input
+    // -----------------------------
+    $validator = Validator::make($request->all(), [
+        'apikey' => 'required|string',
+        'RefNo'  => 'required|string|max:50',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'Validation failed.',
+            'errors'  => $validator->errors()
+        ], 422);
+    }
+
+    // -----------------------------
+    // 🔐 Authenticate Business
+    // -----------------------------
+    $remittance = $this->localAuth($request->apikey);
+
+    // -----------------------------
+    // 🔍 Find Transaction
+    // -----------------------------
+    $txn = DB::table('pgmanage2')
+        ->where('remId', $remittance->remId)
+        ->where('refId', $request->RefNo)
+        ->first();
+
+    if (!$txn) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'Transaction not found.',
+        ], 404);
+    }
+
+    // -----------------------------
+    // 📌 Format Response
+    // -----------------------------
+    return response()->json([
+        'status'  => true,
+        'message' => 'Transaction Status Fetched Successfully',
+        'data'    => [
+            'refId'      => $txn->refId,
+            'txnId'      => $txn->txnId,
+            'orderId'    => $txn->orderId,
+            'amount'     => $txn->amount,
+            'pgType'     => $txn->pgType,
+            'status'     => $txn->status,
+            // 'response'   => json_decode($txn->responseData),
+            'rrn'       =>$txn->bank_ref_no,
+            'created_at' => $txn->created_at,
+            'updated_at' => $txn->updated_at,
+        ]
+    ]);
+}
+
+
+/**
+ * Payment Callback / Webhook Handler
+ * Chagans PG → Your Server
+ */
+
+public function callback(Request $request)
+{
+    Log::channel('fundtransfer')->info("PG CALLBACK RECEIVED", [
+        'payload' => $request->all(),
+        'ip'      => $request->ip()
+    ]);
+
+    // ---------------------------------------------------------
+    // Map webhook fields
+    // ---------------------------------------------------------
+
+    $txnId   = $request->transactionId ?? null;
+    $status  = strtoupper($request->result ?? 'FAILED');
+    $amount  = (float)($request->amount ?? 0);
+    $orderId = $request->orderId ?? null;
+    $utr     = $request->rrn ?? null;
+
+    // ---------------------------------------------------------
+    // Fetch Transaction
+    // ---------------------------------------------------------
+
+    $txn = DB::table('pgmanage2')
+        ->where('orderId', $orderId)
+        ->first();
+
+      //  return $txn;
+    if (!$txn) {
+
+        Log::warning("PG CALLBACK → Transaction Not Found", [
+            'txnId'   => $txnId,
+            'orderId' => $orderId
+        ]);
+
+        return response()->json([
+            'status'  => false,
+            'message' => 'Transaction not found.'
+        ], 404);
+    }
+
+    // ---------------------------------------------------------
+    // DUPLICATE PROTECTION (ONLY FINAL)
+    // ---------------------------------------------------------
+
+    if ($txn->callback_processed == 1) {
+
+        Log::warning("FINAL CALLBACK ALREADY PROCESSED", [
+            'orderId' => $orderId
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Already processed'
+        ]);
+    }
+
+    // ---------------------------------------------------------
+    // Update Callback Response
+    // ---------------------------------------------------------
+
+    DB::table('pgmanage2')
+        ->where('id', $txn->id)
+        ->update([
+            'txnId'        => $txnId,
+            'status'       => $status,
+            'amount'       => $amount,
+            'bank_ref_no'  => $utr,
+            'responseData' => json_encode($request->all(), JSON_UNESCAPED_SLASHES),
+            'updated_at'   => now()
+        ]);
+
+    Log::info("PG CALLBACK UPDATED", [
+        'txnId'   => $txnId,
+        'status'  => $status
+    ]);
+
+    // ---------------------------------------------------------
+    // 🔥 INSTANT CALLBACK (NON-SETTLED)
+    // ---------------------------------------------------------
+
+    if ($status === "SUCCESS" && $txn->initial_callback_sent == 0 && !empty($txn->callbackUrl)) {
+
+        try {
+
+            $payload = [
+                'method'   => 'PAYIN',
+                'refId'    => $txn->refId,
+                'txnId'    => $txnId,
+                'orderId'  => $orderId,
+                'amount'   => $amount,
+                'status'   => 'SUCCESS',
+                'settlement_status' => 'NON-SETTLED', // 🔥 KEY
+                'message'  => 'Payment Received, Settlement Pending'
+            ];
+
+            Http::post($txn->callbackUrl, $payload);
+
+            DB::table('pgmanage2')
+                ->where('id', $txn->id)
+                ->update([
+                    'initial_callback_sent' => 1,
+                    'ready_for_process'     => 1
+                ]);
+
+            Log::info("INITIAL CALLBACK SENT", [
+                'payload' => $payload,
+                'url'     => $txn->callbackUrl
+            ]);
+
+        } catch (\Exception $e) {
+
+            Log::error("INITIAL CALLBACK FAILED", [
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Return Response to PG
+    // ---------------------------------------------------------
+
+    return response()->json([
+        'status'  => true,
+        'message' => 'Callback received successfully'
+    ], 200);
+}
+
+
+public function callbackpg(Request $request)
+{
+    Log::channel('fundtransfer')->info("PG CALLBACK RECEIVED", [
+        'payload' => $request->all(),
+        'ip'      => $request->ip()
+    ]);
+
+    // ---------------------------------------------------------
+    // 🔹 Normalize & Map Fields
+    // ---------------------------------------------------------
+
+    $txnId   = $request->transactionId ?? null;
+    $status  = strtoupper(trim($request->result ?? 'FAILED'));
+    $amount  = (float)($request->amount ?? 0);
+    $orderId = $request->orderId ?? null;
+    $utr     = $request->rrn ?? null;
+
+    // ---------------------------------------------------------
+    // ❌ Validate Required Fields
+    // ---------------------------------------------------------
+
+    if (!$orderId) {
+        return response()->json([
+            'status' => false,
+            'message' => 'OrderId missing'
+        ], 400);
+    }
+
+    // ---------------------------------------------------------
+    // 🔍 Fetch Transaction
+    // ---------------------------------------------------------
+
+    $txn = DB::table('pgmanage2')
+        ->where('orderId', $orderId)
+        ->first();
+
+    if (!$txn) {
+
+        Log::warning("PG CALLBACK → Transaction Not Found", [
+            'orderId' => $orderId
+        ]);
+
+        return response()->json([
+            'status'  => false,
+            'message' => 'Transaction not found.'
+        ], 404);
+    }
+
+    // ---------------------------------------------------------
+    // 🔁 Idempotency Check (Duplicate Protection)
+    // ---------------------------------------------------------
+
+    if ($txn->callback_processed == 1) {
+
+        Log::warning("DUPLICATE CALLBACK BLOCKED", [
+            'orderId' => $orderId
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Already processed'
+        ]);
+    }
+
+    // ---------------------------------------------------------
+    // 🔄 Update Transaction
+    // ---------------------------------------------------------
+
+    DB::table('pgmanage2')
+        ->where('id', $txn->id)
+        ->update([
+            'txnId'        => $txnId,
+            'status'       => $status,
+            'amount'       => $amount,
+            'bank_ref_no'  => $utr,
+            'responseData' => json_encode($request->all(), JSON_UNESCAPED_SLASHES),
+            'callback_processed' => 1, // ✅ FIXED
+            'updated_at'   => now()
+        ]);
+
+    Log::info("PG_P2 CALLBACK UPDATED", [
+        'orderId' => $orderId,
+        'status'  => $status
+    ]);
+
+    // ---------------------------------------------------------
+    // 🔥 Send Merchant Callback (NON-SETTLED)
+    // ---------------------------------------------------------
+
+    if ($status === "SUCCESS" && $txn->initial_callback_sent == 0 && !empty($txn->callbackUrl)) {
+
+        try {
+
+            $payload = [
+                'method'   => 'PAYIN',
+                'refId'    => $txn->refId,
+                'txnId'    => $txnId,
+                'orderId'  => $orderId,
+                'amount'   => $amount,
+                'status'   => 'SUCCESS',
+                'settlement_status' => 'NON-SETTLED',
+                'message'  => 'Payment Received, Settlement Pending'
+            ];
+
+            $res = Http::post($txn->callbackUrl, $payload);
+
+            DB::table('pgmanage2')
+                ->where('id', $txn->id)
+                ->update([
+                    'initial_callback_sent' => 1,
+                    'ready_for_process'     => 1
+                ]);
+
+            Log::info("PG_P2 MERCHANT CALLBACK SENT", [
+                'url'      => $txn->callbackUrl,
+                'payload'  => $payload,
+                'response' => $res->body()
+            ]);
+
+        } catch (\Exception $e) {
+
+            Log::error("PG_P2 MERCHANT CALLBACK FAILED", [
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // ✅ Final Response to PG
+    // ---------------------------------------------------------
+
+    return response()->json([
+        'status'  => true,
+        'message' => 'Callback processed successfully'
+    ]);
+}
+
+public function pgReport(Request $request)
+{
+    $query = DB::table('pgmanage2')
+        ->where('remId', Auth::guard('remittance')->user()->remId);
+
+    // 🔎 Filters
+    if($request->status){
+        $query->where('status',$request->status);
+    }
+
+    if($request->pgType){
+        $query->where('pgType',$request->pgType);
+    }
+
+    if($request->from && $request->to){
+        $query->whereBetween('created_at', [
+            $request->from.' 00:00:00',
+            $request->to.' 23:59:59'
+        ]);
+    }
+
+    // 📊 Summary
+    $summary = (clone $query)->selectRaw("
+        COUNT(*) as total_txn,
+        SUM(amount) as total_amount,
+        SUM(CASE WHEN status='SUCCESS' THEN amount ELSE 0 END) as success_amount,
+        SUM(CASE WHEN status='PENDING' THEN amount ELSE 0 END) as pending_amount,
+        SUM(CASE WHEN status='FAILED' THEN amount ELSE 0 END) as failed_amount
+    ")->first();
+
+    // 📄 Pagination
+    $txn = $query->orderBy('created_at','desc')
+                ->paginate(15)
+                ->withQueryString();
+
+    return view('users.txn.pg2report', compact('txn','summary'));
+}
+
+public function pgExport(Request $request)
+{
+    $query = DB::table('pgmanage2')
+        ->where('remId', Auth::guard('remittance')->user()->remId);
+
+    if($request->status){
+        $query->where('status',$request->status);
+    }
+
+    if($request->pgType){
+        $query->where('pgType',$request->pgType);
+    }
+
+    if($request->from && $request->to){
+        $query->whereBetween('created_at', [
+            $request->from.' 00:00:00',
+            $request->to.' 23:59:59'
+        ]);
+    }
+
+    $data = $query->orderBy('created_at','desc')->get();
+
+    $filename = "pg_report_".date('YmdHis').".csv";
+
+    $headers = [
+        "Content-type" => "text/csv",
+        "Content-Disposition" => "attachment; filename=$filename",
+    ];
+
+    $callback = function() use ($data){
+        $file = fopen('php://output', 'w');
+        fputcsv($file, ['Txn ID','Order ID','Amount','Charges','TDS','Opening','Closing','PG Type','Status','Date']);
+
+        foreach($data as $row){
+            fputcsv($file, [
+                $row->txnId,
+                $row->orderId,
+                $row->amount,
+                $row->charges,
+                $row->tds,
+                $row->openingBalance,
+                $row->closingBalance,
+                $row->pgType,
+                $row->status,
+                $row->created_at,
+            ]);
+        }
+
+        fclose($file);
+    };
+
+    return response()->stream($callback,200,$headers);
+}
+
+public function pgReportAdmin(Request $request)
+{
+    $query = DB::table('pgmanage2');
+
+    // 🔎 Filters
+    if($request->status){
+        $query->where('status',$request->status);
+    }
+    
+
+    if($request->pgType){
+        $query->where('pgType',$request->pgType);
+    }
+
+    if($request->from && $request->to){
+        $query->whereBetween('created_at', [
+            $request->from.' 00:00:00',
+            $request->to.' 23:59:59'
+        ]);
+    }
+    if($request->remId){
+        $remId=$request->remId;
+        $query->where('remId',$remId);
+    }
+
+    // 📊 Summary
+    $summary = (clone $query)->selectRaw("
+        COUNT(*) as total_txn,
+        SUM(amount) as total_amount,
+        SUM(CASE WHEN status='SUCCESS' THEN amount ELSE 0 END) as success_amount,
+        SUM(CASE WHEN status='PENDING' THEN amount ELSE 0 END) as pending_amount,
+        SUM(CASE WHEN status='FAILED' THEN amount ELSE 0 END) as failed_amount
+    ")->first();
+
+    // 📄 Pagination
+    $txn = $query->orderBy('created_at','desc')
+                ->paginate(15)
+                ->withQueryString();
+
+    return view('txn.pg2Txn', compact('txn','summary'));
+}
+
+public function pgExportAdmin(Request $request)
+{
+    $query = DB::table('pgmanage2');
+
+    if($request->status){
+        $query->where('status',$request->status);
+    }
+
+    if($request->pgType){
+        $query->where('pgType',$request->pgType);
+    }
+
+    if($request->from && $request->to){
+        $query->whereBetween('created_at', [
+            $request->from.' 00:00:00',
+            $request->to.' 23:59:59'
+        ]);
+    }
+
+    $data = $query->orderBy('created_at','desc')->get();
+
+    $filename = "pg_report_".date('YmdHis').".csv";
+
+    $headers = [
+        "Content-type" => "text/csv",
+        "Content-Disposition" => "attachment; filename=$filename",
+    ];
+
+    $callback = function() use ($data){
+        $file = fopen('php://output', 'w');
+        fputcsv($file, ['Txn ID','Order ID','Amount','Charges','TDS','Opening','Closing','PG Type','Status','Date']);
+
+        foreach($data as $row){
+            fputcsv($file, [
+                $row->txnId,
+                $row->orderId,
+                $row->amount,
+                $row->charges,
+                $row->tds,
+                $row->openingBalance,
+                $row->closingBalance,
+                $row->pgType,
+                $row->status,
+                $row->created_at,
+            ]);
+        }
+
+        fclose($file);
+    };
+
+    return response()->stream($callback,200,$headers);
+}
+public function wrapPG(Request $request)
+{
+    $request->validate([
+        'amount'   => 'required|numeric',
+        'pgType'   => 'required|string',
+        'txnId'    => 'required|string',
+        'landing'  => 'required|url',
+        'webhook'  => 'required|url',
+    ]);
+
+    $pg = new ChagansPayment2Service();
+
+    $response = $pg->createPaymentRequest(
+        amount: $request->amount,
+        pgType: $request->pgType,
+        txnId: $request->txnId,
+        callback: $request->landing,
+        webhook: $request->webhook
+    );
+
+    return response()->json($response);
+}
+
+
+}
