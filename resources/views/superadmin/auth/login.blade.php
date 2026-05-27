@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login - aarpiz B2B Onboarding</title>
+    <title>Login - Finogic B2B Onboarding</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
-    <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
 </head>
 <body class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 min-h-screen flex items-center justify-center">
@@ -13,7 +13,7 @@
     <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
         <!-- Heading -->
         <div class="text-center mb-6">
-            <h2 class="text-3xl font-extrabold text-gray-800">🔐 aarpiz</h2>
+            <h2 class="text-3xl font-extrabold text-gray-800">🔐 Finogic</h2>
             <p class="text-gray-500 text-sm mt-1">B2B Onboarding Portal</p>
         </div>
 

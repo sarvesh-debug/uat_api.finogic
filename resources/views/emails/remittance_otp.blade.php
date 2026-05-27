@@ -31,7 +31,7 @@
                     </tr>
                     <tr>
                         <td align="center" style="border-top:1px solid #eee; font-size:12px; color:#aaa;">
-                            &copy; {{ date('Y') }} Your aarpiz. All rights reserved.
+                            &copy; {{ date('Y') }} Your Finogic. All rights reserved.
                         </td>
                     </tr>
                 </table>

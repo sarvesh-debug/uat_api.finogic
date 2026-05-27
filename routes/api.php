@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\CreditCardController;
 use App\Http\Controllers\PaycelPgController;
 use App\Http\Controllers\PaydrionApiController;
 use App\Http\Controllers\PaydrionUpiController;
+use App\Http\Controllers\Api\aespIPContoller;
 
 
 
@@ -250,3 +251,32 @@ Route::post('v1/upi-payout', [PaydrionUpiController::class, 'upiPayout']);
 Route::post('v1/check-upi-status', [PaydrionUpiController::class, 'checkPayoutStatus']);
 
 
+//Aeps iPay
+Route::prefix('aeps')->group(function () {
+
+    Route::post('/merchant-onboarding', [aespIPContoller::class, 'merchantOnboarding']);
+
+    Route::get('/merchant-kyc-status/{kid}', [aespIPContoller::class, 'merchantKycStatus']);
+
+    Route::post('/2fa', [aespIPContoller::class, 'twoFactorAuth']);
+
+    Route::post('/cash-withdrawal', [aespIPContoller::class, 'cashWithdrawal']);
+
+    Route::post('/balance-enquiry', [aespIPContoller::class, 'balanceEnquiry']);
+
+    Route::post('/mini-statement', [aespIPContoller::class, 'miniStatement']);
+
+    Route::post('/transaction-status', [aespIPContoller::class, 'transactionStatus']);
+});
+
+//ipay payout
+use App\Http\Controllers\Api\PayoutController;
+
+Route::prefix('payout')->group(function () {
+
+    Route::post('/contact/create', [PayoutController::class, 'createContact']);
+
+    Route::get('/contact/{contactId}', [PayoutController::class, 'getContact']);
+
+    Route::post('/order/create', [PayoutController::class, 'createOrder']);
+});

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>aarpiz | Reset Password</title>
+  <title>Finogic | Reset Password</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root { --brand-blue: #0a22aa; --brand-red: #b62512; }
@@ -22,7 +22,7 @@
 
     <!-- Logo -->
     <div class="flex justify-center mb-8">
-      <img src="{{ asset('img/aarpiz-logo.png') }}" alt="aarpiz Logo" class="h-14 w-auto">
+      <img src="{{ asset('img/Finogic-logo.png') }}" alt="Finogic Logo" class="h-14 w-auto">
     </div>
 
     <!-- Header -->
@@ -107,17 +107,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reset Password | aarpiz</title>
+<title>Reset Password | Finogic</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
-<link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+<link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
 </head>
 <body class="min-h-screen bg-gradient-to-r from-indigo-50 via-blue-50 to-cyan-50 flex items-center justify-center">
 
 <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
     <div class="text-center mb-6">
-        <img src="{{ asset('img/aarpiz-logo.png') }}" class="h-14 mx-auto">
+        <img src="{{ asset('img/Finogic-logo.png') }}" class="h-14 mx-auto">
         <h2 class="text-2xl font-bold mt-4">Reset Password</h2>
         <p class="text-gray-500 mt-2">Enter your new password below.</p>
     </div>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>aarpiz | Terms & Conditions</title>
+  <title>Finogic | Terms & Conditions</title>
   <style>
     :root {
       --brand-blue: #2a48f2ff;
@@ -86,38 +86,38 @@
   </header>
 
   <main>
-    <p>Welcome to aarpiz! By accessing or using our services, you agree to comply with the following terms and conditions. Please read them carefully.</p>
+    <p>Welcome to Finogic! By accessing or using our services, you agree to comply with the following terms and conditions. Please read them carefully.</p>
 
     <h2>1. Account Usage</h2>
     <p>All users must provide accurate and complete information when creating an account. You are responsible for maintaining the confidentiality of your account credentials.</p>
 
     <h2>2. Services</h2>
-    <p>aarpiz offers multiple financial services including payouts, UPI collections, and bank account integrations. The availability of services may vary and are subject to applicable laws and regulations.</p>
+    <p>Finogic offers multiple financial services including payouts, UPI collections, and bank account integrations. The availability of services may vary and are subject to applicable laws and regulations.</p>
 
     <h2>3. User Responsibilities</h2>
     <ul>
       <li>Ensure all transactions comply with applicable laws.</li>
       <li>Maintain accurate and up-to-date information.</li>
-      <li>Notify aarpiz immediately of any unauthorized use of your account.</li>
+      <li>Notify Finogic immediately of any unauthorized use of your account.</li>
     </ul>
 
     <h2>4. Fees and Charges</h2>
-    <p>All fees and charges for services will be disclosed transparently. aarpiz reserves the right to modify fees upon notice.</p>
+    <p>All fees and charges for services will be disclosed transparently. Finogic reserves the right to modify fees upon notice.</p>
 
     <h2>5. Privacy</h2>
     <p>We respect your privacy. Please review our <a href="/privacy" style="color: var(--brand-blue); text-decoration: underline;">Privacy Policy</a> for details on how your data is handled.</p>
 
     <h2>6. Limitation of Liability</h2>
-    <p>aarpiz is not liable for any indirect or consequential damages arising from the use of our services. Liability is limited to the maximum extent permitted by law.</p>
+    <p>Finogic is not liable for any indirect or consequential damages arising from the use of our services. Liability is limited to the maximum extent permitted by law.</p>
 
     <h2>7. Governing Law</h2>
     <p>These terms are governed by the laws of India. Any disputes will be subject to the exclusive jurisdiction of Indian courts.</p>
 
-    <p>By using aarpiz services, you acknowledge that you have read and agree to these Terms & Conditions.</p>
+    <p>By using Finogic services, you acknowledge that you have read and agree to these Terms & Conditions.</p>
   </main>
 
   <footer>
-    <p>&copy; {{ date('Y') }} aarpiz. All rights reserved.</p>
+    <p>&copy; {{ date('Y') }} Finogic. All rights reserved.</p>
   </footer>
 
 </body>

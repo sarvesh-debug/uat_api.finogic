@@ -8,7 +8,7 @@
     <div class="xl:hidden bg-white shadow-md p-4 sticky top-0 z-100">
         <div class="flex items-center justify-between">
             <h1 class="text-xl font-bold text-indigo-600 flex items-center gap-2">
-                <i class="fa-solid fa-rocket text-indigo-500"></i> aarpiz API
+                <i class="fa-solid fa-rocket text-indigo-500"></i> Finogic API
             </h1>
             <button id="menuToggle" class="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
                 <i class="fa-solid fa-bars text-gray-600"></i>
@@ -78,7 +78,7 @@
                 <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
                     <i class="fa-solid fa-rocket text-white"></i>
                 </div>
-                aarpiz API
+                Finogic API
             </h1>
             <nav class="space-y-1 flex-1">
                 <a href="#about" class="flex items-center gap-3 p-3 text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-200 group border border-transparent hover:border-indigo-100">
@@ -128,10 +128,10 @@
                     <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
                         <i class="fa-solid fa-circle-info text-white text-lg"></i>
                     </div>
-                    <h2 class="text-2xl xl:text-3xl font-bold text-gray-800">About aarpiz</h2>
+                    <h2 class="text-2xl xl:text-3xl font-bold text-gray-800">About Finogic</h2>
                 </div>
                 <p class="text-gray-700 leading-relaxed text-sm xl:text-base mb-4">
-                    aarpiz is a next-generation remittance and payout engine, designed to make money transfers,
+                    Finogic is a next-generation remittance and payout engine, designed to make money transfers,
                     account verifications, and beneficiary management seamless, fast, and reliable.
                 </p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">

@@ -8,7 +8,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
 
-  <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+  <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
   <title>Reset Password</title>
   <style>
@@ -38,7 +38,7 @@
         <tr>
           <td style="padding:28px 32px; text-align:center; background:linear-gradient(90deg,#5c42e7,#6f5af8); border-radius:12px 12px 0 0;">
             <h1 style="margin:0; font-size:24px; font-weight:700; color:#ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; letter-spacing:1px;">
-              aarpiz
+              Finogic
             </h1>
           </td>
         </tr>
@@ -78,7 +78,7 @@
 
               <p style="margin:20px 0 0 0; color:#666; font-size:13px;">
                 Regards,<br>
-                <strong>aarpiz_Payout</strong>
+                <strong>Finogic_Payout</strong>
               </p>
             </td>
           </tr>
@@ -88,7 +88,7 @@
             <td style="padding:18px 32px; background:#fbfbfd; text-align:center; color:#9aa0aa; font-size:12px;">
               <p style="margin:0 0 8px 0;">If you're having trouble clicking the "Reset Password" button, copy and paste the URL below into your web browser:</p>
               <p style="word-break:break-all; margin:0 0 8px 0;"><a href="{{ $url }}" style="color:#5c42e7;">{{ $url }}</a></p>
-              <p style="margin:8px 0 0 0;">© 2026 aarpiz. All rights reserved.</p>
+              <p style="margin:8px 0 0 0;">© 2026 Finogic. All rights reserved.</p>
             </td>
           </tr>
         </table>

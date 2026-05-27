@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>aarpiz | Forgot Password</title>
+<title>Finogic | Forgot Password</title>
 
-<link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}">
+<link rel="icon" href="{{ asset('img/Finogic-fav.png') }}">
 
 <!-- Lottie -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
@@ -153,7 +153,7 @@ body {
 
 <div class="card">
 
-<img src="{{ asset('img/aarpiz-logo.png') }}" class="logo">
+<img src="{{ asset('img/Finogic-logo.png') }}" class="logo">
 
 <h2>Forgot Password?</h2>
 <p>Enter your email to receive reset instructions</p>

@@ -133,7 +133,7 @@ public function store(Request $request)
         'password'  => $Password,
     ], function ($message) use ($data) {
         $message->to($data['email'])
-                ->subject('Welcome to Aarpiz Platform');
+                ->subject('Welcome to Finogic Platform');
     });
                 // Email to admin
             $emails = [
@@ -306,7 +306,7 @@ public function login(Request $request)
                 'location' => $location
             ], function ($message) use ($user) {
                 $message->to($user->email)
-                        ->subject('Log in OTP - Aarpiz Platform');
+                        ->subject('Log in OTP - Finogic Platform');
             });
 
             return redirect()->route('remittances.verifyOtpForm')

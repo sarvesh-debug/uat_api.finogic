@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>aarpiz | Secure Login</title>
+<title>Finogic | Secure Login</title>
 
-<link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}">
+<link rel="icon" href="{{ asset('img/Finogic-fav.png') }}">
 
 <!-- Lottie CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
@@ -197,11 +197,11 @@ body {
 
 <!-- LEFT -->
 <div class="left">
-  <img src="{{asset('img/aarpiz-logo.png')}}">
-  <h1>Welcome to <span class="glow">aarpiz</span></h1>
+  <img src="{{asset('img/Finogic-logo.png')}}">
+  <h1>Welcome to <span class="glow">Finogic</span></h1>
   <p>
     Simplify your financial operations with a secure, scalable, and real-time platform built for modern businesses. 
-    From seamless transaction processing to reliable infrastructure, aarpiz ensures speed, accuracy, and trust at every step.
+    From seamless transaction processing to reliable infrastructure, Finogic ensures speed, accuracy, and trust at every step.
   </p>
 </div>
 

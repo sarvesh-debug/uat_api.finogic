@@ -172,7 +172,7 @@ function downloadPDF(url) {
         link.href = window.URL.createObjectURL(blob);
 
         // ✅ Dynamic file name
-        link.download = "{{ $data->brand_name }}_aarpiz.pdf";
+        link.download = "{{ $data->brand_name }}_Finogic.pdf";
 
         link.click();
 

@@ -6,7 +6,7 @@
     <title>OTP Verification</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
 </head>
 <body class="flex items-center justify-center min-h-screen bg-gray-100">

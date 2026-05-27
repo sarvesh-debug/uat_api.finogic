@@ -45,7 +45,7 @@ class ResetPasswordNotification extends Notification
         ], false));
 
         return (new MailMessage)
-                    ->subject('Reset your Aarpiz password')
+                    ->subject('Reset your Finogic password')
                     // Use a custom view (html)
                     ->view('emails.reset_password', [
                         'url' => $url,

@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>aarpiz Admin Login</title>
+    <title>Finogic Admin Login</title>
 
-    <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -412,7 +412,7 @@
                     <i class="fa-solid fa-wallet"></i>
                 </div>
 
-                <h1>aarpiz</h1>
+                <h1>Finogic</h1>
 
                 <p>
                     Secure fintech dashboard for payout management,

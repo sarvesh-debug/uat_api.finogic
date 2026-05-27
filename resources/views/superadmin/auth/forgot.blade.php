@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Forgot Password - aarpiz B2B Onboarding</title>
+    <title>Forgot Password - Finogic B2B Onboarding</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
-    <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
 </head>
 <body class="bg-gradient-to-r from-pink-500 to-red-500 min-h-screen flex items-center justify-center">

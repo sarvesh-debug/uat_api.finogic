@@ -196,7 +196,7 @@
             <button id="menu-toggle" class="p-2 rounded-lg bg-indigo-600 focus:outline-none">
                 <i id="menu-icon" class="fas fa-bars text-sm"></i>
             </button>
-            <img src="{{asset('img/aarpiz-logo.png')}}"  alt="">
+            <img src="{{asset('img/Finogic-logo.png')}}"  alt="">
         </div>
         <div class="flex items-center gap-3">
             <div class="relative">
@@ -215,7 +215,7 @@
     <aside class="mobile-sidebar sidebar-gradient text-white overflow-y-auto sidebar-scroll md:flex md:flex-col md:relative md:translate-x-0 md:shadow-xl">
         <div class="flex flex-col h-full">
             <div class="flex items-center justify-between px-6 py-4 border-b border-indigo-600 flex-shrink-0">
-                <img src="{{asset('img/aarpiz-logo.png')}}" width="" alt="">
+                <img src="{{asset('img/Finogic-logo.png')}}" width="" alt="">
                 <button id="close-sidebar" class="md:hidden text-white p-2 rounded-full bg-indigo-600">
                     <i class="fas fa-times"></i>
                 </button>

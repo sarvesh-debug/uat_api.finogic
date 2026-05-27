@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Forgot Password - aarpiz B2B Onboarding</title>
+    <title>Forgot Password - Finogic B2B Onboarding</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
 </head>
@@ -35,10 +35,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forgot Password - aarpiz Payout</title>
+    <title>Forgot Password - Finogic Payout</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
     <style>
         * {
@@ -274,7 +274,7 @@
         <!-- Left Brand Section with Image -->
         <div class="brand-section">
             <div class="brand-content">
-                <div class="brand-logo">aarpiz PAYOUT</div>
+                <div class="brand-logo">Finogic PAYOUT</div>
                 <div class="brand-tagline">
                     Secure Account Recovery for<br>
                     Your Payment Solutions
@@ -344,7 +344,7 @@
 </body>
 </html>
 =======
-    <title>aarpiz | Forgot Password</title>
+    <title>Finogic | Forgot Password</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-r from-blue-50 to-blue-100 min-h-screen flex items-center justify-center">
@@ -354,7 +354,7 @@
         <div class="flex flex-col items-center mb-6">
             <div class="flex items-center space-x-2 bg-gradient-to-r from-blue-600  to-blue-400 px-3 py-1.5 rounded-3xl shadow-md">
                 <img src="{{asset('img/rocket--v1.png')}}" alt="logo" class="h-8 w-8">
-                <span class="text-lg font-bold text-white">aarpiz</span>
+                <span class="text-lg font-bold text-white">Finogic</span>
             </div>
         </div>
 

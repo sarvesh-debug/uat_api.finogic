@@ -5,14 +5,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    {{-- <title>Dashboard - aarpiz B2B Onboarding</title> --}}
+    {{-- <title>Dashboard - Finogic B2B Onboarding</title> --}}
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Font Awesome CDN -->
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-papb9D9Yp+T+5TdfQbA1iJ9ecV9c4L8FZVcz6B/sxE6b5Rm8i0r1j/mx3Zt4xVpTbxBqL1fPNY2Jlb6kQp8Hw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-<link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+<link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
 
 </head>
@@ -23,7 +23,7 @@
         <div>
             <div class="flex items-center gap-3 px-6 py-6 border-b border-indigo-600">
                 <span class="text-2xl">📊</span>
-                <span class="font-bold text-xl">aarpiz</span>
+                <span class="font-bold text-xl">Finogic</span>
             </div>
             <!-- Profile -->
             <div class="flex flex-col items-center py-8">
@@ -56,7 +56,7 @@
     <div class="md:hidden w-full bg-indigo-700 text-white flex items-center justify-between px-4 py-3">
         <div class="flex items-center gap-2">
             <span class="text-2xl">📊</span>
-            <span class="font-bold text-lg">aarpiz</span>
+            <span class="font-bold text-lg">Finogic</span>
         </div>
         <form method="POST" action="{{ route('logout') }}">
             @csrf

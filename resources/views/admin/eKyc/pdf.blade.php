@@ -86,7 +86,7 @@ td {
 
 <!-- HEADER -->
 <div class="header">
-    <strong>aarpiz</strong><br>
+    <strong>Finogic</strong><br>
     Agreement Date: {{ \Carbon\Carbon::now()->format('d-M-Y') }}
     
 </div>
@@ -156,10 +156,10 @@ Fund Payout, Utility/BBPS, UPI Collect, Virtual Account, AEPS, Penny Drop Verifi
 <strong>Key Terms:</strong><br><br>
 
 <strong>1. Non-exclusive Platform Access:</strong><br>
-The User is granted a non-exclusive right to use the aarpiz platform. The same services may be offered to other users.<br><br>
+The User is granted a non-exclusive right to use the Finogic platform. The same services may be offered to other users.<br><br>
 
 <strong>2. User Responsibility for Transactions:</strong><br>
-The User shall be solely responsible for all transactions, including any errors, fraud, or misuse. aarpiz acts only as a facilitator.<br><br>
+The User shall be solely responsible for all transactions, including any errors, fraud, or misuse. Finogic acts only as a facilitator.<br><br>
 
 <strong>3. Charges & Pricing:</strong><br>
 Service charges may change from time to time depending on market conditions or banking partners.<br><br>
@@ -227,7 +227,7 @@ Jaipur, Rajasthan (India)
 
 <!-- FOOTER -->
 <div class="footer">
-    aarpiz | eKYC System
+    Finogic | eKYC System
 </div>
 
 </body>

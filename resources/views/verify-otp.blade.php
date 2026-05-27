@@ -9,7 +9,7 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 
-<link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+<link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
 <style>
 

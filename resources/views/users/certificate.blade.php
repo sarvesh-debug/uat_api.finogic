@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>aarpiz Certificate</title>
+  <title>Finogic Certificate</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -33,7 +33,7 @@
 
     /* Watermark */
     .certificate::before {
-      content: "aarpiz";
+      content: "Finogic";
       position: absolute;
       top: 50%;
       left: 50%;
@@ -91,7 +91,7 @@
 <main class="certificate relative z-10 text-center">
   <!-- Header -->
   <div class="bg-gradient-to-r from-purple-600 via-indigo-500 to-indigo-700 text-white py-6 rounded-t-lg shadow-lg px-6">
-    <img src="https://via.placeholder.com/100" alt="aarpiz Logo" class="logo mx-auto mb-2">
+    <img src="https://via.placeholder.com/100" alt="Finogic Logo" class="logo mx-auto mb-2">
     <h1 class="text-4xl font-bold uppercase tracking-wider">Authorized Banking Point</h1>
     <p class="text-lg uppercase tracking-wide">Certificate of Authorization</p>
   </div>
@@ -100,7 +100,7 @@
   <div class="mt-10 px-6 text-gray-800 space-y-6 relative z-10">
     <p class="text-lg italic">This is to certify that</p>
     <p class="text-3xl font-extrabold text-indigo-700">[Retailer Name]</p>
-    <p class="text-lg">is an authorized Retailer of <span class="font-bold text-purple-700">aarpiz</span>.</p>
+    <p class="text-lg">is an authorized Retailer of <span class="font-bold text-purple-700">Finogic</span>.</p>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
       <div class="info-card">
@@ -137,13 +137,13 @@
   <!-- Signature -->
   <div class="mt-12 relative z-10">
     <div class="signature-line"></div>
-    <p class="font-bold mt-2 text-indigo-700">aarpiz</p>
+    <p class="font-bold mt-2 text-indigo-700">Finogic</p>
     <p class="text-sm text-gray-500">Chief Sales Officer</p>
   </div>
 
   <!-- Footer Terms -->
   <div class="mt-6 text-xs text-gray-500 px-4 relative z-10">
-    <p>*Terms and conditions: The appointment is subject to acceptance of the terms and conditions of aarpiz. The Banking point shall only function as per the service agreement.</p>
+    <p>*Terms and conditions: The appointment is subject to acceptance of the terms and conditions of Finogic. The Banking point shall only function as per the service agreement.</p>
   </div>
 </main>
 
@@ -157,7 +157,7 @@
     const element = document.querySelector('main');
     html2pdf().set({
       margin: 0.5,
-      filename: 'aarpiz_Certificate.pdf',
+      filename: 'Finogic_Certificate.pdf',
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
@@ -975,7 +975,7 @@
         <div class="corner corner-br"></div>
 
         <!-- Watermark -->
-        <div class="watermark">aarpiz</div>
+        <div class="watermark">Finogic</div>
 
         <!-- Ribbon -->
         <div class="ribbon">AUTHORIZED BANKING POINT</div>
@@ -992,7 +992,7 @@
         <!-- Body -->
         <div class="certificate-body">
           <p class="retailer-name">MD JASIM</p>
-          <p>is an authorized Retailer of <span class="company-name">aarpiz</span>.</p>
+          <p>is an authorized Retailer of <span class="company-name">Finogic</span>.</p>
           
           <!-- Info Lines -->
           <div class="info-lines">
@@ -1009,14 +1009,14 @@
         <!-- Signature -->
         <div class="signature-section">
           <div class="signature">
-            <div class="signature-name">aarpiz</div>
+            <div class="signature-name">Finogic</div>
             <div class="signature-title">Chief Sales Officer</div>
           </div>
         </div>
 
         <!-- Footer Note -->
         <div class="footer-note">
-          *Terms and conditions: The appointment is subject to acceptance of the terms and conditions of aarpiz. The Banking point shall only function as per the service agreement.
+          *Terms and conditions: The appointment is subject to acceptance of the terms and conditions of Finogic. The Banking point shall only function as per the service agreement.
         </div>
 
       </div>
@@ -1305,7 +1305,7 @@
       <div class="corner corner-br"></div>
       
       <!-- Watermark -->
-      <div class="watermark">aarpiz</div>
+      <div class="watermark">Finogic</div>
       
       <!-- Gold seal -->
       <div class="gold-seal">
@@ -1322,7 +1322,7 @@
       <div class="certificate-body">
         <p>This is to certify that</p>
         <p class="retailer-name">Ramesh Kumar</p>
-        <p>is an authorized Retailer of <span class="company-name">aarpiz</span>.</p>
+        <p>is an authorized Retailer of <span class="company-name">Finogic</span>.</p>
         
         <!-- Info Items - No boxes -->
         <div class="info-container">
@@ -1351,14 +1351,14 @@
       <!-- Signature -->
       <div class="signature-section">
         <div class="signature">
-          <div class="signature-name">aarpiz</div>
+          <div class="signature-name">Finogic</div>
           <div class="signature-title">Chief Sales Officer</div>
         </div>
       </div>
 
       <!-- Footer Note -->
       <div class="footer-note">
-        *Terms and conditions: The appointment is subject to acceptance of the terms and conditions of aarpiz. The Banking point shall only function as per the service agreement.
+        *Terms and conditions: The appointment is subject to acceptance of the terms and conditions of Finogic. The Banking point shall only function as per the service agreement.
       </div>
     </div>
   </div>

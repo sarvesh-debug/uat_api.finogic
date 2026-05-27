@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>aarpiz | Forgot Password</title>
+  <title>Finogic | Forgot Password</title>
 
-  <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+  <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -33,7 +33,7 @@
     
     <!-- Logo -->
     <div class="flex justify-center mb-8">
-      <img src="{{ asset('img/aarpiz-logo.png') }}" alt="aarpiz Logo" class="h-14 w-auto drop-md">
+      <img src="{{ asset('img/Finogic-logo.png') }}" alt="Finogic Logo" class="h-14 w-auto drop-md">
     </div>
 
     <!-- Header -->

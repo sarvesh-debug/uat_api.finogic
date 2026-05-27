@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Reset Password - aarpiz Payout</title>
+    <title>Reset Password - Finogic Payout</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: Arial, sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; }
@@ -51,10 +51,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Reset Password - aarpiz Payout</title>
+    <title>Reset Password - Finogic Payout</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
     <style>
         * {
@@ -132,7 +132,7 @@
     <!-- Left Brand Section -->
     <div class="brand-section">
         <div class="brand-content">
-            <div class="brand-logo">aarpiz PAYOUT</div>
+            <div class="brand-logo">Finogic PAYOUT</div>
             <div class="brand-tagline">
                 Set Your New Password<br>and Secure Your Account
             </div>

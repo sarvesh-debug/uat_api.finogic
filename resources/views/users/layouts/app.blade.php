@@ -5,7 +5,7 @@
 <html lang="en" x-data="{ sidebarOpen: false, activeTab: '{{ Route::currentRouteName() }}' }">
 <head>
     <meta charset="UTF-8">
-    {{-- <title>Dashboard - aarpiz aarpiz</title> --}}
+    {{-- <title>Dashboard - Finogic Finogic</title> --}}
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +15,7 @@
     <!-- Font Awesome CDN -->
    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
-   <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+   <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
     <style>
         html {
@@ -90,7 +90,7 @@
         class="sidebar text-white w-64 flex flex-col justify-between transform md:translate-x-0 fixed md:static inset-y-0 left-0 z-50 transition-transform duration-300 overflow-y-auto"
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" >
  <div class="flex items-center gap-3 px-6 py-4 border-b border-indigo-600">
-                <img src="{{asset('img/aarpiz-logo.png')}}" width="" alt="">
+                <img src="{{asset('img/Finogic-logo.png')}}" width="" alt="">
             </div>
         @if (auth('remittance')->user()->isKyc == 1)
             <div>
@@ -177,9 +177,9 @@
                 {{-- <div class="bg-white p-2 rounded-xl">
                     <span class="text-indigo-700 text-xl font-bold">XP</span>
                 </div>
-                <span class="font-bold text-xl logo-text">aarpiz</span> --}}
+                <span class="font-bold text-xl logo-text">Finogic</span> --}}
 
-                <img src="{{asset('img/white aarpiz logo1.png')}}" width="160px" alt="">
+                <img src="{{asset('img/white Finogic logo1.png')}}" width="160px" alt="">
             </div>
 
             <!-- Profile -->

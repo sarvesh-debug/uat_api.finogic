@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Welcome to aarpiz  Payout</title>
+    <title>Welcome to Finogic  Payout</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -73,7 +73,7 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>Welcome to aarpiz Xpress Payout</h1>
+            <h1>Welcome to Finogic Xpress Payout</h1>
         </div>
         <div class="content">
             <p>Dear <strong>{{ $brand_name }}</strong>,</p>
@@ -90,10 +90,10 @@
             <p>Get started by logging into your account:</p>
             <a href="{{ url('/') }}" class="button">Login to Dashboard</a>
 
-            <p style="margin-top: 30px;">Regards,<br>Team aarpiz</p>
+            <p style="margin-top: 30px;">Regards,<br>Team Finogic</p>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} aarpiz. All rights reserved.
+            &copy; {{ date('Y') }} Finogic. All rights reserved.
         </div>
     </div>
 </body>

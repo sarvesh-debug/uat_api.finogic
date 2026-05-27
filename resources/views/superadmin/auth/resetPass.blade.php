@@ -7,7 +7,7 @@
     <!-- ✅ Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
 
 </head>
 <body class="bg-gradient-to-r from-indigo-500 to-blue-600 min-h-screen flex items-center justify-center">

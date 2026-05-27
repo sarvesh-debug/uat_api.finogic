@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>aarpiz | Privacy Policy</title>
+  <title>Finogic | Privacy Policy</title>
   <style>
      :root {
       --brand-blue: #2a48f2ff;
@@ -90,7 +90,7 @@
 
 <header>
   <h1>Privacy Policy</h1>
-  <p>Your privacy is important to us at aarpiz. This policy explains how we handle your personal information.</p>
+  <p>Your privacy is important to us at Finogic. This policy explains how we handle your personal information.</p>
 </header>
 
 <main>
@@ -128,7 +128,7 @@
 </main>
 
 <footer>
-  <p>&copy; {{ date('Y') }} aarpiz. All rights reserved.</p>
+  <p>&copy; {{ date('Y') }} Finogic. All rights reserved.</p>
   <p>
     <a href="/terms">Terms & Conditions</a> | 
     <a href="/privacy">Privacy Policy</a>

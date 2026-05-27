@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/Finogic-fav.png') }}" type="image/png">
     
     <title>Reset Your Password</title>
     <style>
@@ -19,13 +19,13 @@
     <div class="container">
         <!-- Logo -->
         <div style="text-align:center;">
-            <img src="{{ asset('img/aarpiz-logo.png') }}" alt="aarpiz Logo" class="logo">
+            <img src="{{ asset('img/Finogic-logo.png') }}" alt="Finogic Logo" class="logo">
         </div>
 
         <h2 style="color:#0a22aa; text-align:center;">Reset Your Password</h2>
         <p style="color:#374151; font-size:16px; line-height:1.5;">
             Hello, <br>
-            You recently requested to reset your password for your aarpiz account. Click the button below to reset it. This password reset link is valid for 60 minutes.
+            You recently requested to reset your password for your Finogic account. Click the button below to reset it. This password reset link is valid for 60 minutes.
         </p>
 
         <div style="text-align:center; margin:30px 0;">
@@ -37,7 +37,7 @@
         </p>
 
         <div class="footer">
-            &copy; {{ date('Y') }} aarpiz. All rights reserved.
+            &copy; {{ date('Y') }} Finogic. All rights reserved.
         </div>
     </div>
 </body>

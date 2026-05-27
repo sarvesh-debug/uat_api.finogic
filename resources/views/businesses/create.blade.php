@@ -140,7 +140,7 @@
 
             <div class="col-span-2">
                 <p class="text-gray-500 font-medium">Logo</p>
-                <img src="{{ asset('img/aarpiz-logo.png') }}" alt="Logo" class="mt-2 h-24 rounded-lg shadow-md">
+                <img src="{{ asset('img/Finogic-logo.png') }}" alt="Logo" class="mt-2 h-24 rounded-lg shadow-md">
             </div>
 
             <div class="col-span-2">

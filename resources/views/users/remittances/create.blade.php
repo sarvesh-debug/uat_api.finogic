@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>aarpiz | Sign Up</title>
+<title>Finogic | Sign Up</title>
 
-<link rel="icon" href="{{ asset('img/aarpiz-fav.png') }}">
+<link rel="icon" href="{{ asset('img/Finogic-fav.png') }}">
 
 <!-- Lottie -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
@@ -190,12 +190,12 @@ body {
 
 <!-- LEFT -->
 <div class="left">
-  <img src="{{asset('img/aarpiz-logo.png')}}">
-  <h1>Join <span class="glow">aarpiz</span></h1>
+  <img src="{{asset('img/Finogic-logo.png')}}">
+  <h1>Join <span class="glow">Finogic</span></h1>
 
   <p class="mt-4 text-gray-300">
     Get started with a platform designed for speed, security, and scalability. 
-    aarpiz helps you streamline financial operations with ease and confidence.
+    Finogic helps you streamline financial operations with ease and confidence.
   </p>
 
   <ul class="mt-6 space-y-3">

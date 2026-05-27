@@ -262,7 +262,7 @@ document.addEventListener('click', function(e){
         let formData = new URLSearchParams(new FormData(document.getElementById('filterForm')));
         formData.set('page', page);
 
-        fetch("https://uatapi.aarpiz.com/api/v1/all/summary?" + formData.toString())
+        fetch("https://uatapi.Finogic.com/api/v1/all/summary?" + formData.toString())
         .then(res => res.json())
         .then(res => {
 
@@ -338,7 +338,7 @@ document.getElementById('exportBtn').addEventListener('click', function(e){
 
     let formData = new URLSearchParams(new FormData(document.getElementById('filterForm')));
     
-    let url = "https://uatapi.aarpiz.com/api/summary/export?" + formData.toString();
+    let url = "https://uatapi.Finogic.com/api/summary/export?" + formData.toString();
 
     window.open(url, '_blank');
 });
