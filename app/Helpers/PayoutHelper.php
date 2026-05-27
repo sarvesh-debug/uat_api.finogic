@@ -1,10 +1,10 @@
- <?php
-
-
+<?php
 
 namespace App\Helpers;
+
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+
 class PayoutHelper
 {
     /*
@@ -18,8 +18,8 @@ class PayoutHelper
         return [
             "Content-Type: application/json",
             "Accept: application/json",
-            "Authorization: ".env('PAYOUT_AUTH'),
-            "signature: ".$signature
+            "Authorization: " . env('PAYOUT_AUTH'),
+            "signature: " . $signature
         ];
     }
 
@@ -32,7 +32,7 @@ class PayoutHelper
     public static function generateSignature($url, $payload = null)
     {
         $client = env('CLIENT_KEY');
-        $salt = env('SALT_KEY');
+        $salt   = env('SALT_KEY');
 
         /*
         |--------------------------------------------------------------------------
@@ -48,7 +48,7 @@ class PayoutHelper
 
             return hash(
                 'sha256',
-                $base64.$url.$client."####".$salt
+                $base64 . $url . $client . "####" . $salt
             );
         }
 
@@ -60,13 +60,13 @@ class PayoutHelper
 
         return hash(
             'sha256',
-            $url.$client."####".$salt
+            $url . $client . "####" . $salt
         );
     }
 
     /*
     |--------------------------------------------------------------------------
-    | CURL HIT
+    | HIT API
     |--------------------------------------------------------------------------
     */
 
@@ -74,44 +74,45 @@ class PayoutHelper
         $method,
         $url,
         $payload = []
-    )
-    {
+    ) {
+
         $signature = self::generateSignature(
             $url,
             $payload
         );
 
-        $curl = curl_init();
+        $fullUrl = env('IPAY_BASE_URL') . $url;
 
-        curl_setopt_array($curl, [
-
-            CURLOPT_URL => env('PAYOUT_BASE_URL').$url,
-
-            CURLOPT_RETURNTRANSFER => true,
-
-            CURLOPT_CUSTOMREQUEST => $method,
-
-            CURLOPT_POSTFIELDS => json_encode($payload),
-
-            CURLOPT_HTTPHEADER => self::headers($signature),
-
+        Log::info("Payout API Request", [
+            'url'       => $fullUrl,
+            'method'    => $method,
+            'payload'   => $payload,
+            'signature' => $signature
         ]);
 
-        $response = curl_exec($curl);
+        $response = Http::withHeaders(
+            self::headers($signature)
+        );
 
-        $err = curl_error($curl);
+        if ($method == "POST") {
 
-        curl_close($curl);
+            $response = $response->post(
+                $fullUrl,
+                $payload
+            );
 
-        if ($err) {
+        } else {
 
-            return [
-                'status' => false,
-                'message' => $err
-            ];
+            $response = $response->get($fullUrl);
         }
 
-        return json_decode($response, true);
+        $result = $response->json();
+
+        Log::info("Payout API Response", [
+            'response' => $result
+        ]);
+
+        return $result;
     }
 
     /*
@@ -139,39 +140,12 @@ class PayoutHelper
 
     public static function getContact($contactId)
     {
-        $url = "/v1/service/payout/contacts/".$contactId;
+        $url = "/v1/service/payout/contacts/" . $contactId;
 
-        $signature = self::generateSignature($url);
-
-        $curl = curl_init();
-
-        curl_setopt_array($curl, [
-
-            CURLOPT_URL => env('PAYOUT_BASE_URL').$url,
-
-            CURLOPT_RETURNTRANSFER => true,
-
-            CURLOPT_CUSTOMREQUEST => "GET",
-
-            CURLOPT_HTTPHEADER => self::headers($signature),
-
-        ]);
-
-        $response = curl_exec($curl);
-
-        $err = curl_error($curl);
-
-        curl_close($curl);
-
-        if ($err) {
-
-            return [
-                'status' => false,
-                'message' => $err
-            ];
-        }
-
-        return json_decode($response, true);
+        return self::hitApi(
+            "GET",
+            $url
+        );
     }
 
     /*

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
+ use Illuminate\Support\Facades\Log;
 
 
 class aespIPContoller extends Controller
@@ -262,7 +263,7 @@ public function merchantOnboarding(Request $request)
             'code' => $api['code'],
             'requestId' => $requestId,
             'message' => $api['data']['providerResponse'] ?? 'Bank Server Down Time'
-        ], $api['code']);
+        ], 200);
     }
 
     try {
