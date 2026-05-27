@@ -28,6 +28,7 @@ use App\Http\Controllers\PaycelPgController;
 use App\Http\Controllers\PaydrionApiController;
 use App\Http\Controllers\PaydrionUpiController;
 use App\Http\Controllers\Api\aespIPContoller;
+use App\Http\Controllers\IPayCallbacksController;
 
 
 
@@ -280,3 +281,6 @@ Route::prefix('payout')->group(function () {
 
     Route::post('/order/create', [PayoutController::class, 'createOrder']);
 });
+
+//ipay callbacl
+ Route::post('/ipaymnets/callback', [IPayCallbacksController::class, 'callback']);

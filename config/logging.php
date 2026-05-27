@@ -112,6 +112,11 @@ return [
             'path' => storage_path('logs/accountverify.log'),
             'level' => 'info',
         ],
+          'IPCallBack' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/IPCallBack.log'),
+            'level' => 'info',
+        ],
 
         'fundtransfer' => [
             'driver' => 'single',
