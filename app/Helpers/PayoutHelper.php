@@ -12,13 +12,20 @@ class PayoutHelper
     | HEADERS
     |--------------------------------------------------------------------------
     */
+    protected static function getAuthorization()
+    {
+        $username = env('IPAY_USERNAME_PAYOUT');
+        $password = env('IPAY_PASSWORD_PAYOUT');
+
+        return 'Basic ' . base64_encode($username . ':' . $password);
+    }
 
     public static function headers($signature)
     {
         return [
             "Content-Type: application/json",
             "Accept: application/json",
-            "Authorization: " . env('PAYOUT_AUTH'),
+            "Authorization: " . self::getAuthorization(),
             "signature: " . $signature
         ];
     }
@@ -84,6 +91,7 @@ class PayoutHelper
         $fullUrl = env('IPAY_BASE_URL') . $url;
 
         Log::info("Payout API Request", [
+            
             'url'       => $fullUrl,
             'method'    => $method,
             'payload'   => $payload,

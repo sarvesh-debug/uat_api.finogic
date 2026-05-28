@@ -284,3 +284,27 @@ Route::prefix('payout')->group(function () {
 
 //ipay callbacl
  Route::post('/ipaymnets/callback', [IPayCallbacksController::class, 'callback']);
+
+ //ipayment 
+use App\Http\Controllers\API\PayccController;
+
+Route::prefix('v1/paycc')->group(function () {
+
+    Route::post('/kyc/init', [PayccController::class, 'initKyc']);
+
+    Route::get('/kyc/status/{kid}', [PayccController::class, 'kycStatus']);
+
+    Route::post('/customer/check', [PayccController::class, 'customerCheck']);
+
+    Route::post('/card/add', [PayccController::class, 'addCard']);
+
+    Route::post('/card/delete', [PayccController::class, 'deleteCard']);
+
+    Route::post('/categories', [PayccController::class, 'categories']);
+
+    Route::post('/banks', [PayccController::class, 'banks']);
+
+    Route::post('/bank/add', [PayccController::class, 'addBank']);
+
+    Route::post('/cards', [PayccController::class, 'cards']);
+});

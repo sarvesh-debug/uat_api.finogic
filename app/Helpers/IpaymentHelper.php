@@ -5,135 +5,145 @@ namespace App\Helpers;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class IpaymentHelper
+class IPaymentHelper
 {
     protected static $baseUrl;
+    protected static $auth;
 
-    protected static function init()
+    public static function init()
     {
-        self::$baseUrl = env('IPAY_BASE_URL');
+        self::$baseUrl = env('PAYCC_BASE_URL');
+        self::$auth = env('PAYCC_AUTH');
     }
 
-    protected static function headers()
+    protected static function getAuthorization()
+    {
+        $username = env('IPAY_USERNAME_PAYCC');
+        $password = env('IPAY_PASSWORD_PAYCC');
+
+        return 'Basic ' . base64_encode($username . ':' . $password);
+    }
+
+    public static function headers()
     {
         return [
-            'Authorization' => env('IPAY_AUTH'),
-            'Content-Type'  => 'application/json',
-            'Accept'        => 'application/json',
+            'Content-Type' => 'application/json',
+            'Authorization' => self::getAuthorization(),
         ];
     }
 
+    /**
+     * Common API Request Handler
+     */
     protected static function request($method, $endpoint, $payload = [])
     {
         self::init();
 
+        $url = self::$baseUrl . $endpoint;
+
         try {
 
-            $url = self::$baseUrl . $endpoint;
-
-            $http = Http::withHeaders(self::headers());
-
-            if (strtoupper($method) == 'GET') {
-                $response = $http->get($url);
-            } else {
-                $response = $http->post($url, $payload);
-            }
-
-            $json = $response->json();
-
-            Log::info('IPAY REQUEST', [
-                'url' => $url,
-                'payload' => $payload,
-                'response' => $json
+            // Request Log
+            Log::channel('daily')->info('PAYCC API REQUEST', [
+                'method'   => strtoupper($method),
+                'url'      => $url,
+                'payload'  => $payload,
+                'headers'  => self::headers(),
+                'datetime' => now()->toDateTimeString(),
             ]);
 
-            return [
-                'status'  => ($json['status'] ?? '') == 'SUCCESS',
-                'code'    => $json['code'] ?? '0x0205',
-                'message' => $json['message'] ?? '',
-                'data'    => $json['data'] ?? [],
-                'raw'     => $json
-            ];
+            // API Call
+            $response = Http::withHeaders(self::headers());
+
+            if (strtolower($method) === 'get') {
+                $response = $response->get($url);
+            } else {
+                $response = $response->post($url, $payload);
+            }
+
+            $responseData = $response->json();
+
+            // Response Log
+            Log::channel('daily')->info('PAYCC API RESPONSE', [
+                'method'      => strtoupper($method),
+                'url'         => $url,
+                'payload'     => $payload,
+                'status_code' => $response->status(),
+                'response'    => $responseData,
+                'datetime'    => now()->toDateTimeString(),
+            ]);
+
+            return $responseData;
 
         } catch (\Exception $e) {
 
-            Log::error('IPAY API ERROR', [
-                'message' => $e->getMessage()
+            // Exception Log
+            Log::channel('daily')->error('PAYCC API ERROR', [
+                'method'    => strtoupper($method),
+                'url'       => $url,
+                'payload'   => $payload,
+                'message'   => $e->getMessage(),
+                'line'      => $e->getLine(),
+                'file'      => $e->getFile(),
+                'datetime'  => now()->toDateTimeString(),
             ]);
 
             return [
                 'status'  => false,
-                'code'    => '0x0205',
                 'message' => $e->getMessage(),
-                'data'    => []
             ];
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Merchant KYC
-    |--------------------------------------------------------------------------
-    */
-
-    public static function merchantKyc($data)
+    public static function initKyc($data)
     {
         return self::request(
-            'POST',
-            '/v1/service/aeps/kyc',
+            'post',
+            '/v1/service/paycc/init/kyc',
             $data
         );
     }
 
-    public static function merchantKycStatus($kid)
+    public static function kycStatus($kid)
     {
         return self::request(
-            'GET',
-            '/v1/service/aeps/kyc/' . $kid
+            'get',
+            '/v1/service/paycc/kyc/status/' . $kid
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 2FA
-    |--------------------------------------------------------------------------
-    */
-
-    public static function twoFactorAuth($data)
+    public static function customerCheck($data)
     {
         return self::request(
-            'POST',
-            '/v1/service/aeps/airtel/2fa',
+            'post',
+            '/v1/service/paycc/customer',
             $data
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | AEPS Transaction
-    |--------------------------------------------------------------------------
-    */
-
-    public static function aepsTransaction($data)
+    public static function addCard($data)
     {
         return self::request(
-            'POST',
-            '/v1/service/aeps/airtel/txn',
+            'post',
+            '/v1/service/paycc/add/verify/card',
             $data
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Transaction Status
-    |--------------------------------------------------------------------------
-    */
-
-    public static function transactionStatus($data)
+    public static function deleteCard($data)
     {
         return self::request(
-            'POST',
-            '/v1/service/aeps/transactionStatus',
+            'post',
+            '/v1/service/paycc/delete/creditcard',
+            $data
+        );
+    }
+
+    public static function categories($data)
+    {
+        return self::request(
+            'post',
+            '/v1/service/paycc/category',
             $data
         );
     }

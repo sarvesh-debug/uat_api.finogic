@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Helpers\IpaymentHelper;
+use App\Helpers\IpaymentAepsHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
+use App\Models\AepsMerchant;
  use Illuminate\Support\Facades\Log;
 
 
@@ -248,7 +249,7 @@ public function merchantOnboarding(Request $request)
         'payload'   => $payload
     ]);
 
-  $api = IpaymentHelper::merchantKyc($payload);
+  $api = IpaymentAepsHelper::merchantKyc($payload);
 
     // ✅ Response Log
     Log::info('AEPS Create Merchant Response', [
@@ -262,7 +263,7 @@ public function merchantOnboarding(Request $request)
             'status' => false,
             'code' => $api['code'],
             'requestId' => $requestId,
-            'message' => $api['data']['providerResponse'] ?? 'Bank Server Down Time'
+            'message' => $api['message'] ?? 'Bank Server Down Time'
         ], 200);
     }
 
@@ -323,7 +324,7 @@ public function merchantKycStatus(Request $request, $kid)
         return $authCheck;
     }
 
-    $api = IpaymentHelper::merchantKycStatus($kid);
+    $api = IpaymentAepsHelper::merchantKycStatus($kid);
 
     // ✅ Proper Update
     AepsMerchant::where('kycId', $kid)
@@ -388,7 +389,7 @@ public function twoFactorAuth(Request $request)
     ]);
 
     // ✅ API Call
-    $api = IpaymentHelper::twoFactorAuth($payload);
+    $api = IpaymentAepsHelper::twoFactorAuth($payload);
 
     // ✅ Response Log
     Log::info('AEPS 2FA Response', [
@@ -593,7 +594,7 @@ private function aepsTxn(Request $request, $type)
         'payload' => $payload
     ]);
 
-    $api = IpaymentHelper::aepsTransaction($payload);
+    $api = IpaymentAepsHelper::aepsTransaction($payload);
 
     Log::info('AEPS Transaction Response', [
         'requestId' => $requestId,
@@ -721,7 +722,7 @@ public function transactionStatus(Request $request)
         'payload' => $payload
     ]);
 
-    $api = IpaymentHelper::transactionStatus($payload);
+    $api = IpaymentAepsHelper::transactionStatus($payload);
 
     Log::info('AEPS Status Response', [
         'requestId' => $requestId,
