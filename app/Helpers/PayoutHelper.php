@@ -23,10 +23,14 @@ class PayoutHelper
     public static function headers($signature)
     {
         return [
-            "Content-Type: application/json",
-            "Accept: application/json",
-            "Authorization: " . self::getAuthorization(),
-            "signature: " . $signature
+
+            "Content-Type" => "application/json",
+
+            "Accept" => "application/json",
+
+            "Authorization" => self::getAuthorization(),
+
+            "signature" => $signature
         ];
     }
 
@@ -36,41 +40,109 @@ class PayoutHelper
     |--------------------------------------------------------------------------
     */
 
-    public static function generateSignature($url, $payload = null)
-    {
-        $client = env('CLIENT_KEY');
-        $salt   = env('SALT_KEY');
+   public static function generateSignature($url, $payload = null)
+{
+    $client = env('IPAY_USERNAME_PAYOUT');
+
+   $salt = base64_decode(env('SALT_KEY'));
+    /*
+    |--------------------------------------------------------------------------
+    | POST API
+    |--------------------------------------------------------------------------
+    */
+
+    if (!empty($payload)) {
 
         /*
         |--------------------------------------------------------------------------
-        | POST API
+        | EXACT JSON
         |--------------------------------------------------------------------------
         */
 
-        if ($payload) {
-
-            $base64 = base64_encode(
-                json_encode($payload)
-            );
-
-            return hash(
-                'sha256',
-                $base64 . $url . $client . "####" . $salt
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET API
-        |--------------------------------------------------------------------------
-        */
-
-        return hash(
-            'sha256',
-            $url . $client . "####" . $salt
+        $jsonPayload = json_encode(
+            $payload,
+            JSON_UNESCAPED_SLASHES
+            | JSON_UNESCAPED_UNICODE
         );
+
+        /*
+        |--------------------------------------------------------------------------
+        | BASE64
+        |--------------------------------------------------------------------------
+        */
+
+        $base64 = base64_encode($jsonPayload);
+
+        /*
+        |--------------------------------------------------------------------------
+        | RAW STRING
+        |--------------------------------------------------------------------------
+        */
+
+        $rawString =
+            $base64 .
+            $url .
+            $client .
+            "####" .
+            $salt;
+
+        /*
+        |--------------------------------------------------------------------------
+        | SIGNATURE
+        |--------------------------------------------------------------------------
+        */
+
+        $signature = hash(
+            'sha256',
+            $rawString
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOG
+        |--------------------------------------------------------------------------
+        */
+
+        Log::channel('fundtransfer')->info(
+            "Signature Generated",
+            [
+                'jsonPayload' => $jsonPayload,
+                'base64'      => $base64,
+                'rawString'   => $rawString,
+                'signature'   => $signature
+            ]
+        );
+
+        return $signature;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | GET API SIGNATURE
+    |--------------------------------------------------------------------------
+    */
+
+    $rawString =
+        $url .
+        $client .
+        "####" .
+        $salt;
+
+    $signature = hash(
+        'sha256',
+        $rawString
+    );
+
+    Log::channel('fundtransfer')->info(
+        "GET Signature Generated",
+        [
+            'rawString' => $rawString,
+            'signature' => $signature
+        ]
+    );
+
+    return $signature;
+}
     /*
     |--------------------------------------------------------------------------
     | HIT API
@@ -96,6 +168,7 @@ class PayoutHelper
             'method'    => $method,
             'payload'   => $payload,
             'signature' => $signature
+            
         ]);
 
         $response = Http::withHeaders(

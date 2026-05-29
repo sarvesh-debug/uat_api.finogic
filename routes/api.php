@@ -231,9 +231,9 @@ use App\Http\Controllers\PaycelCashfreestdController;
 Route::post('/paycel/response', [PaycelCashfreestdController::class, 'handleResponse']);
 
 //paycel pg
-Route::post('dynamic/pg/request',[PaycelPgController::class,'pay']);
-Route::post('dynamic/pg/status/{referenceId}', [PaycelPgController::class, 'checkStatus']);
-Route::post('dynamic/paycel/pg/callback', [PaycelPgController::class, 'callback']);
+// Route::post('dynamic/pg/request',[PaycelPgController::class,'pay']);
+// Route::post('dynamic/pg/status/{referenceId}', [PaycelPgController::class, 'checkStatus']);
+// Route::post('dynamic/paycel/pg/callback', [PaycelPgController::class, 'callback']);
 
 //credit card bill pay inspay
 Route::post('v1/credit-card/fetch', [CreditCardController::class, 'billFetch']);

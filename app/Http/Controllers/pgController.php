@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\ChagansPaymentService;
+use App\Services\PaymentGatewayService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -141,6 +142,7 @@ class pgController extends Controller
             'pgType'       => $request->pgType,
             'status'       => 'PENDING',
             'callbackUrl'  => $request->callbackUrl ?? null,
+            'redirectUrl'  => $request->redirectUrl ?? null,
             'initiate_ip'  => $clientIp,
             'created_at'   => now(),
             'updated_at'   => now()
@@ -149,14 +151,16 @@ class pgController extends Controller
         // ---------------------------------------------------------
         // 🚀 Step 2: Initiate Payment Using Service Class
         // ---------------------------------------------------------
-        $pg = new ChagansPaymentService();
+        $pg = new  PaymentGatewayService();
 
         $response = $pg->createPaymentRequest(
             amount: $request->amount,
-            pgType: $request->pgType,
+            email:$request->email,
+            name:$request->name,
+            mobile:$request->mobile,
             txnId: $txnId,
-            callback:$request->landing,
-            webhook:"https://api.credxpay.com/api/dynamic/pg/callback",
+            // callback:$request->landing,
+            // webhook:"https://api.credxpay.com/api/dynamic/pg/callback",
         );
 
         // ---------------------------------------------------------
@@ -239,10 +243,7 @@ public function status(Request $request)
 }
 
 
-/**
- * Payment Callback / Webhook Handler
- * Chagans PG → Your Server
- */
+
 
 public function callback(Request $request)
 {
@@ -252,14 +253,16 @@ public function callback(Request $request)
     ]);
 
     // ---------------------------------------------------------
-    // Map webhook fields
+    // Provider Response Mapping
     // ---------------------------------------------------------
 
-    $txnId   = $request->transactionId ?? null;
-    $status  = strtoupper($request->result ?? 'FAILED');
-    $amount  = (float)($request->amount ?? 0);
-    $orderId = $request->orderId ?? null;
-    $utr     = $request->rrn ?? null;
+    $txnId      = $request->clientRefId ?? null;
+    $status     = strtoupper($request->status ?? 'FAILED');
+    $amount     = (float)($request->amount ?? 0);
+    $orderId    = $request->orderId ?? null;
+    $utr        = $request->utr ?? null;
+    $paymentId  = $request->paymentId ?? null;
+    $payMode    = $request->payMode ?? null;
 
     // ---------------------------------------------------------
     // Fetch Transaction
@@ -271,7 +274,7 @@ public function callback(Request $request)
 
     if (!$txn) {
 
-        Log::warning("PG CALLBACK → Transaction Not Found", [
+        Log::channel('fundtransfer')->warning("PG CALLBACK → Transaction Not Found", [
             'txnId'   => $txnId,
             'orderId' => $orderId
         ]);
@@ -283,91 +286,242 @@ public function callback(Request $request)
     }
 
     // ---------------------------------------------------------
-    // DUPLICATE PROTECTION (ONLY FINAL)
+    // Duplicate Protection
     // ---------------------------------------------------------
 
     if ($txn->callback_processed == 1) {
 
-        Log::warning("FINAL CALLBACK ALREADY PROCESSED", [
+        Log::channel('fundtransfer')->warning("CALLBACK ALREADY PROCESSED", [
             'orderId' => $orderId
         ]);
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Already processed'
         ]);
     }
 
     // ---------------------------------------------------------
-    // Update Callback Response
+    // Update Transaction
     // ---------------------------------------------------------
 
     DB::table('pgmanage')
         ->where('id', $txn->id)
         ->update([
-            'txnId'        => $txnId,
-            'status'       => $status,
-            'amount'       => $amount,
-            'bank_ref_no'  => $utr,
-            'responseData' => json_encode($request->all(), JSON_UNESCAPED_SLASHES),
-            'updated_at'   => now()
+            'txnId'              => $txnId,
+            'status'             => $status,
+            'amount'             => $amount,
+            'bank_ref_no'        => $utr,
+            'paymentId'          => $paymentId,
+            'responseData'       => json_encode($request->all(), JSON_UNESCAPED_SLASHES),
+            'callback_processed' => 1,
+            'updated_at'         => now()
         ]);
 
-    Log::info("PG CALLBACK UPDATED", [
-        'txnId'   => $txnId,
-        'status'  => $status
+    Log::channel('fundtransfer')->info("PG CALLBACK UPDATED", [
+        'txnId'  => $txnId,
+        'status' => $status
     ]);
 
     // ---------------------------------------------------------
-    // 🔥 INSTANT CALLBACK (NON-SETTLED)
+    // Prepare Payload
     // ---------------------------------------------------------
 
-    if ($status === "SUCCESS" && $txn->initial_callback_sent == 0 && !empty($txn->callbackUrl)) {
+    $payload = [
+        'status'      => $status,
+        'txnId'       => $txnId,
+        'utr'         => $utr,
+        'amount'      => $amount,
+        'orderId'     => $orderId,
+        'paymentId'   => $paymentId,
+        'payMode'     => $payMode,
+        'refId'       => $txn->refId,
+        'message'     => $status === 'SUCCESS'
+                            ? 'Payment Successful'
+                            : 'Payment Failed'
+    ];
+
+    // ---------------------------------------------------------
+    // Send POST Callback To Client
+    // ---------------------------------------------------------
+
+    if (!empty($txn->callbackUrl)) {
 
         try {
 
-            $payload = [
-                'method'   => 'PAYIN',
-                'refId'    => $txn->refId,
-                'txnId'    => $txnId,
-                'orderId'  => $orderId,
-                'amount'   => $amount,
-                'status'   => 'SUCCESS',
-                'settlement_status' => 'NON-SETTLED', // 🔥 KEY
-                'message'  => 'Payment Received, Settlement Pending'
-            ];
+            $response = Http::post($txn->callbackUrl, $payload);
 
-            Http::post($txn->callbackUrl, $payload);
-
-            DB::table('pgmanage')
-                ->where('id', $txn->id)
-                ->update([
-                    'initial_callback_sent' => 1,
-                    'ready_for_process'     => 1
-                ]);
-
-            Log::info("INITIAL CALLBACK SENT", [
-                'payload' => $payload,
-                'url'     => $txn->callbackUrl
+            Log::channel('fundtransfer')->info("CLIENT CALLBACK SENT", [
+                'url'      => $txn->callbackUrl,
+                'payload'  => $payload,
+                'response' => $response->body()
             ]);
 
         } catch (\Exception $e) {
 
-            Log::error("INITIAL CALLBACK FAILED", [
+            Log::channel('fundtransfer')->error("CLIENT CALLBACK FAILED", [
                 'error' => $e->getMessage()
             ]);
         }
     }
 
     // ---------------------------------------------------------
-    // Return Response to PG
+    // Redirect User To Landing Page
+    // ---------------------------------------------------------
+
+    if (!empty($txn->redirectUrl)) {
+
+        $redirectUrl = $txn->redirectUrl;
+
+        $params = http_build_query($payload);
+
+        Log::channel('fundtransfer')->info("REDIRECTING USER", [
+            'url' => $redirectUrl . '?' . $params
+        ]);
+
+        return redirect($redirectUrl . '?' . $params);
+    }
+
+    // ---------------------------------------------------------
+    // Fallback Response
     // ---------------------------------------------------------
 
     return response()->json([
         'status'  => true,
-        'message' => 'Callback received successfully'
+        'message' => 'Callback processed successfully'
     ], 200);
 }
+
+
+/**
+ * Payment Callback / Webhook Handler
+ * Chagans PG → Your Server
+ */
+
+// public function callback(Request $request)
+// {
+//     Log::channel('fundtransfer')->info("PG CALLBACK RECEIVED", [
+//         'payload' => $request->all(),
+//         'ip'      => $request->ip()
+//     ]);
+
+//     // ---------------------------------------------------------
+//     // Map webhook fields
+//     // ---------------------------------------------------------
+
+//     $txnId   = $request->transactionId ?? null;
+//     $status  = strtoupper($request->result ?? 'FAILED');
+//     $amount  = (float)($request->amount ?? 0);
+//     $orderId = $request->orderId ?? null;
+//     $utr     = $request->rrn ?? null;
+
+//     // ---------------------------------------------------------
+//     // Fetch Transaction
+//     // ---------------------------------------------------------
+
+//     $txn = DB::table('pgmanage')
+//         ->where('orderId', $orderId)
+//         ->first();
+
+//     if (!$txn) {
+
+//         Log::warning("PG CALLBACK → Transaction Not Found", [
+//             'txnId'   => $txnId,
+//             'orderId' => $orderId
+//         ]);
+
+//         return response()->json([
+//             'status'  => false,
+//             'message' => 'Transaction not found.'
+//         ], 404);
+//     }
+
+//     // ---------------------------------------------------------
+//     // DUPLICATE PROTECTION (ONLY FINAL)
+//     // ---------------------------------------------------------
+
+//     if ($txn->callback_processed == 1) {
+
+//         Log::warning("FINAL CALLBACK ALREADY PROCESSED", [
+//             'orderId' => $orderId
+//         ]);
+
+//         return response()->json([
+//             'status' => true,
+//             'message' => 'Already processed'
+//         ]);
+//     }
+
+//     // ---------------------------------------------------------
+//     // Update Callback Response
+//     // ---------------------------------------------------------
+
+//     DB::table('pgmanage')
+//         ->where('id', $txn->id)
+//         ->update([
+//             'txnId'        => $txnId,
+//             'status'       => $status,
+//             'amount'       => $amount,
+//             'bank_ref_no'  => $utr,
+//             'responseData' => json_encode($request->all(), JSON_UNESCAPED_SLASHES),
+//             'updated_at'   => now()
+//         ]);
+
+//     Log::info("PG CALLBACK UPDATED", [
+//         'txnId'   => $txnId,
+//         'status'  => $status
+//     ]);
+
+//     // ---------------------------------------------------------
+//     // 🔥 INSTANT CALLBACK (NON-SETTLED)
+//     // ---------------------------------------------------------
+
+//     if ($status === "SUCCESS" && $txn->initial_callback_sent == 0 && !empty($txn->callbackUrl)) {
+
+//         try {
+
+//             $payload = [
+//                 'method'   => 'PAYIN',
+//                 'refId'    => $txn->refId,
+//                 'txnId'    => $txnId,
+//                 'orderId'  => $orderId,
+//                 'amount'   => $amount,
+//                 'status'   => 'SUCCESS',
+//                 'settlement_status' => 'NON-SETTLED', // 🔥 KEY
+//                 'message'  => 'Payment Received, Settlement Pending'
+//             ];
+
+//             Http::post($txn->callbackUrl, $payload);
+
+//             DB::table('pgmanage')
+//                 ->where('id', $txn->id)
+//                 ->update([
+//                     'initial_callback_sent' => 1,
+//                     'ready_for_process'     => 1
+//                 ]);
+
+//             Log::info("INITIAL CALLBACK SENT", [
+//                 'payload' => $payload,
+//                 'url'     => $txn->callbackUrl
+//             ]);
+
+//         } catch (\Exception $e) {
+
+//             Log::error("INITIAL CALLBACK FAILED", [
+//                 'error' => $e->getMessage()
+//             ]);
+//         }
+//     }
+
+//     // ---------------------------------------------------------
+//     // Return Response to PG
+//     // ---------------------------------------------------------
+
+//     return response()->json([
+//         'status'  => true,
+//         'message' => 'Callback received successfully'
+//     ], 200);
+// }
 // public function callback(Request $request)
 // {
 //     Log::channel('fundtransfer')->info("PG CALLBACK RECEIVED", [

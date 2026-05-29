@@ -349,7 +349,132 @@ class IPayCallbacksController extends Controller
                         ]
                     );
 
-                } else {
+                } 
+                elseif($event=='paycc.request.success')
+                    {
+                         Log::channel('fundtransfer')->info("PG CALLBACK RECEIVED", [
+                            'payload' => $request->all(),
+                            'ip'      => $request->ip()
+                        ]);
+
+                        // ---------------------------------------------------------
+                        // Map webhook fields
+                        // ---------------------------------------------------------
+
+                        $txnId   = $request->clientRefId ?? null;
+                        $status  = $request->code ?? 'FAILED';
+                        $amount  = (float)($request->amount ?? 0);
+                        $orderId = $request->orderId ?? null;
+                        $utr     = $request->utr ?? null;
+
+                        // ---------------------------------------------------------
+                        // Fetch Transaction
+                        // ---------------------------------------------------------
+
+                        $txn = DB::table('pgmanage')
+                            ->where('txnId', $txnId)
+                            ->first();
+
+                        if (!$txn) {
+
+                            Log::warning("PG CALLBACK → Transaction Not Found", [
+                                'txnId'   => $txnId,
+                                'orderId' => $orderId ?? $txnId
+                            ]);
+
+                            return response()->json([
+                                'status'  => false,
+                                'message' => 'Transaction not found.'
+                            ], 404);
+                        }
+
+                        // ---------------------------------------------------------
+                        // DUPLICATE PROTECTION (ONLY FINAL)
+                        // ---------------------------------------------------------
+
+                        if ($txn->callback_processed == 1) {
+
+                            Log::warning("FINAL CALLBACK ALREADY PROCESSED", [
+                                'orderId' => $orderId
+                            ]);
+
+                            return response()->json([
+                                'status' => true,
+                                'message' => 'Already processed'
+                            ]);
+                        }
+
+                        // ---------------------------------------------------------
+                        // Update Callback Response
+                        // ---------------------------------------------------------
+
+                        DB::table('pgmanage')
+                            ->where('id', $txn->id)
+                            ->update([
+                                'txnId'        => $txnId,
+                                'status'       => $status,
+                                'amount'       => $amount,
+                                'bank_ref_no'  => $utr,
+                                'responseData' => json_encode($request->all(), JSON_UNESCAPED_SLASHES),
+                                'updated_at'   => now()
+                            ]);
+
+                        Log::info("PG CALLBACK UPDATED", [
+                            'txnId'   => $txnId,
+                            'status'  => $status
+                        ]);
+
+                        // ---------------------------------------------------------
+                        // 🔥 INSTANT CALLBACK (NON-SETTLED)
+                        // ---------------------------------------------------------
+
+                        if ($status === "0x0200" && $txn->initial_callback_sent == 0 && !empty($txn->callbackUrl)) {
+
+                            try {
+
+                                $payload = [
+                                    'method'   => 'PAYIN',
+                                    'refId'    => $txn->refId,
+                                    'txnId'    => $txnId,
+                                    'orderId'  => $orderId,
+                                    'amount'   => $amount,
+                                    'status'   => 'SUCCESS',
+                                    'settlement_status' => 'NON-SETTLED', // 🔥 KEY
+                                    'message'  => 'Payment Received, Settlement Pending'
+                                ];
+
+                                Http::post($txn->callbackUrl, $payload);
+
+                                DB::table('pgmanage')
+                                    ->where('id', $txn->id)
+                                    ->update([
+                                        'initial_callback_sent' => 1,
+                                        'ready_for_process'     => 1
+                                    ]);
+
+                                Log::info("INITIAL CALLBACK SENT", [
+                                    'payload' => $payload,
+                                    'url'     => $txn->callbackUrl
+                                ]);
+
+                            } catch (\Exception $e) {
+
+                                Log::error("INITIAL CALLBACK FAILED", [
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        }
+
+                        // ---------------------------------------------------------
+                        // Return Response to PG
+                        // ---------------------------------------------------------
+
+                        return response()->json([
+                            'status'  => true,
+                            'message' => 'Callback received successfully'
+                        ], 200);
+                    }
+                else {
 
                     Log::warning(
                         "Merchant Callback URL Missing",
