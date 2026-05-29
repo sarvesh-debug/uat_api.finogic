@@ -50,15 +50,16 @@ class PayoutService
     public function createOrder($request)
     {
         $payload = [
-            "contactId" => $request->contact_id,
+            "contactId" => $request->contactId,
             "amount" => $request->amount,
             "purpose" => "salary_disbursement",
             "mode" => $request->mode,
             "narration" => "Payout Transfer",
             "remark" => "API Transfer",
-            "clientRefId" => "TXN".time().rand(1000,9999)
+            "clientRefId" => $request->clientRefId,
         ];
 
+        //return $payload;
         return PayoutHelper::createOrder($payload);
     }
 }

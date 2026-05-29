@@ -6,6 +6,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\PayoutService;
+use Illuminate\Support\Facades\Validator;
+
+use Illuminate\Support\Facades\Http;
+
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use App\Helpers\InstantPayHelper;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class PayoutController extends Controller
 {
@@ -16,7 +25,22 @@ class PayoutController extends Controller
         $this->payoutService = $payoutService;
     }
 
+    public function localAuth($cgapi)
+    {
+        $storedCgapi = DB::table('remittances')->where('apikey',$cgapi)->value('apikey');
+        $remittance = DB::table('remittances')->where('apikey',$cgapi)->first();
+        if (!$storedCgapi || $cgapi !== $storedCgapi) {
+            // Return JSON error response if no match
+            response()->json([
+                'status' => false,
+                'message' => 'Unauthorized or invalid api token.'
+            ], 401)->send();
+            exit;
+        }
 
+        // If match, return true or proceed silently
+        return $remittance;
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -24,22 +48,235 @@ class PayoutController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function createContact(Request $request)
-    {
-        $request->validate([
-            'first_name' => 'required',
-            'last_name' => 'nullable',
-            'email' => 'required|email',
-            'mobile' => 'required',
-            'account_number' => 'required',
-            'ifsc' => 'required',
-        ]);
+public function createContact(Request $request)
+{
+    $request->validate([
+        'apikey'         => 'required',
+        'userId'         => 'required',
+        'first_name'     => 'required',
+        'last_name'      => 'nullable',
+        'email'          => 'required|email',
+        'mobile'         => 'required',
+        'account_number' => 'required',
+        'ifsc'           => 'required',
+    ]);
+    $validator = Validator::make($request->all(), [
 
-        return response()->json(
-            $this->payoutService->createContact($request)
-        );
+    'apikey' => 'required',
+    'userId' => 'required',
+
+    'first_name' => 'required|string|max:100',
+
+    'last_name' => 'nullable|string|max:100',
+
+    'email' => 'required|email|max:255',
+
+    'mobile' => 'required|digits_between:10,15',
+
+    'account_number' => 'required|min:6|max:30',
+
+    'ifsc' => 'required|string|size:11',
+
+], [
+
+    'apikey.required' => 'API Key is required.',
+    'userId.required' => 'UserId  is required.',
+
+    'first_name.required' => 'First Name is required.',
+
+    'email.required' => 'Email is required.',
+
+    'email.email' => 'Please enter a valid email address.',
+
+    'mobile.required' => 'Mobile Number is required.',
+
+    'mobile.digits_between' => 'Mobile Number must be between 10 to 15 digits.',
+
+    'account_number.required' => 'Account Number is required.',
+
+    'ifsc.required' => 'IFSC Code is required.',
+
+    'ifsc.size' => 'IFSC Code must be 11 characters.'
+]);
+
+if ($validator->fails()) {
+
+    return response()->json([
+
+        'status' => false,
+
+        'message' => 'Validation failed.',
+
+        'errors' => $validator->errors(),
+
+        'error_list' => $validator->errors()->all()
+
+    ], 422);
+}
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTH CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    $remittance = $this->localAuth($request->apikey);
+
+    if (!$remittance) {
+
+        return response()->json([
+            'status'  => false,
+            'message' => 'Unauthorized. Invalid API key.'
+        ], 401);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | REQUEST LOG
+    |--------------------------------------------------------------------------
+    */
+
+    Log::channel('fundtransfer')->info(
+        'Create Contact Request',
+        [
+            'ip'      => $request->ip(),
+            'remId'   => $remittance->remId,
+            'payload' => $request->all()
+        ]
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | IP WHITELIST CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    $clientIp = trim($request->ip());
+
+    $whitelistedIps = DB::table('remittances')
+        ->where('remId', $remittance->remId)
+        ->pluck('ipAddress')
+        ->map(fn ($ip) => trim($ip))
+        ->toArray();
+
+    if (!in_array($clientIp, $whitelistedIps)) {
+
+        Log::warning(
+            "IP BLOCKED",
+            [
+                'ip'    => $clientIp,
+                'remId' => $remittance->remId
+            ]
+        );
+
+        return response()->json([
+            'status'  => false,
+            'message' => "Access denied. Your IP ({$clientIp}) is not whitelisted."
+        ], 403);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DUPLICATE CONTACT CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    $existingContact = DB::table('payout_contacts')
+        ->where('remId', $remittance->remId)
+        ->where('account_number', $request->account_number)
+        ->first();
+
+    if ($existingContact) {
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Contact already exists.',
+            'data'    => [
+                'contactId' => $existingContact->contact_id
+            ]
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RAW REQUEST
+    |--------------------------------------------------------------------------
+    */
+
+    $rawPayload = [
+        'firstName'     => $request->first_name,
+        'lastName'      => $request->last_name,
+        'email'         => $request->email,
+        'mobile'        => $request->mobile,
+        'accountNumber' => $request->account_number,
+        'ifsc'          => $request->ifsc,
+    ];
+
+    try {
+
+        /*
+        |--------------------------------------------------------------------------
+        | API HIT
+        |--------------------------------------------------------------------------
+        */
+
+        $response = $this->payoutService->createContact($request);
+
+        Log::channel('fundtransfer')->info(
+            'Create Contact Response',
+            [
+                'remId'    => $remittance->remId,
+                'response' => $response
+            ]
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUCCESS
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            isset($response['status']) &&
+            $response['status'] == 'SUCCESS'
+        ) {
+
+            DB::table('payout_contacts')->insert([
+                'remId'          => $remittance->remId,
+                'userId'          => $request->userId,
+                'contact_id'     => $response['data']['contactId'] ?? null,
+                'first_name'     => $response['data']['firstName'] ?? null,
+                'last_name'      => $response['data']['lastName'] ?? null,
+                'email'          => $response['data']['email'] ?? null,
+                'mobile'         => $response['data']['mobile'] ?? null,
+                'account_number' => $response['data']['accountNumber'] ?? null,
+                'ifsc'           => $response['data']['accountIFSC'] ?? null,
+                'status'         => $response['status'],
+                'requestBody'    => json_encode($rawPayload),
+                'responseBody'   => json_encode($response),
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+        }
+
+        return response()->json($response);
+
+    } catch (\Exception $e) {
+
+        Log::error(
+            'Create Contact Exception',
+            [
+                'remId' => $remittance->remId,
+                'error' => $e->getMessage()
+            ]
+        );
+
+        return response()->json([
+            'status'  => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
     /*
     |--------------------------------------------------------------------------
     | GET CONTACT
@@ -152,7 +389,7 @@ public function createOrder(Request $request)
 
             'mobileNo'          => 'required|string|max:15',
             'txnAmount'         => 'required|numeric|min:100',
-            'contact_id' => 'required',
+            'contact_id' =>          'required',
             'RefNo'             => 'required|string|max:50',
 
         ]);
@@ -399,7 +636,7 @@ public function createOrder(Request $request)
             'closing_balance'  => $closingBal,
             'bank_name'        => $request->bankName ?? '',
             'ifsc_code'        => $request->ifscCode ?? '',
-            'acc_no'           => $request->accountNo ?? '',
+            'acc_no'           => $request->contact_id ?? '',
             'beneficiary_name' => $request->accountHolderName ?? '',
             'refId'            => $request->RefNo,
             'requestBody'      => json_encode($rawPayload),
@@ -420,95 +657,21 @@ public function createOrder(Request $request)
                 'amount' => $closingBal
             ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | CREATE CONTACT
-        |--------------------------------------------------------------------------
-        */
-
-        $contactRequest = new Request([
-            'first_name'     => $request->accountHolderName,
-            'last_name'      => '',
-            'email'          => $remittance->email,
-            'mobile'         => $request->mobileNo,
-            'account_number' => $request->accountNo,
-            'ifsc'           => $request->ifscCode,
-        ]);
-
-        $contactResponse = $this->payoutService
-            ->createContact($contactRequest);
-
-        Log::channel('fundtransfer')->info(
-            "Contact Response",
-            [
-                'response' => $contactResponse
-            ]
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | CONTACT FAILED
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            !isset($contactResponse['status']) ||
-            $contactResponse['status'] != 'SUCCESS'
-        ) {
-
-            DB::table('remittances')
-                ->where('remId', $remittance->remId)
-                ->increment('amount', $totalDeduct);
-
-            DB::table('xpresspayout')
-                ->where('refId', $request->RefNo)
-                ->update([
-
-                    'status'       => 'Failed',
-
-                    'responseBody' => json_encode($contactResponse),
-
-                    'updated_at'   => now(),
-                ]);
-
-            return response()->json([
-                'status'  => false,
-                'message' => $contactResponse['message']
-                    ?? 'Contact creation failed.'
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET CONTACT ID
-        |--------------------------------------------------------------------------
-        */
-
-        $contactId = $contactResponse['data']['contactId'] ?? null;
-
-        if (!$contactId) {
-
-            DB::table('remittances')
-                ->where('remId', $remittance->remId)
-                ->increment('amount', $totalDeduct);
-
-            return response()->json([
-                'status'  => false,
-                'message' => 'Contact ID not found.'
-            ]);
-        }
-
+      
         /*
         |--------------------------------------------------------------------------
         | CREATE ORDER PAYLOAD
         |--------------------------------------------------------------------------
         */
 
-        $orderRequest = new Request([
-            'contact_id' => $contactId,
-            'amount'     => $amount,
-            'mode'       => 'IMPS'
+        $contactRequest = new Request([
+            'contactId'     => $request->contact_id,
+            'amount'      =>  $request->txnAmount,
+            'mode'          => 'IMPS',
+            'clientRefId'         => $paymentId,
+            
         ]);
+       // return $contactRequest;
 
         /*
         |--------------------------------------------------------------------------
@@ -517,7 +680,9 @@ public function createOrder(Request $request)
         */
 
         $bankResponse = $this->payoutService
-            ->createOrder($orderRequest);
+            ->createOrder($contactRequest);
+
+            return $bankResponse;
 
         Log::channel('fundtransfer')->info(
             "Payout Response Received",
@@ -666,6 +831,7 @@ public function createOrder(Request $request)
 
     } catch (\Exception $e) {
 
+        return $e;
         Log::error(
             "Payout Error: " . $e->getMessage()
         );
@@ -680,5 +846,87 @@ public function createOrder(Request $request)
 
         ], 500);
     }
+}
+
+
+public function getContacts(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+
+        'apikey' => 'required',
+
+        'userId' => 'required',
+
+    ]);
+
+    if ($validator->fails()) {
+
+        return response()->json([
+
+            'status' => false,
+
+            'message' => 'Validation failed.',
+
+            'errors' => $validator->errors()
+
+        ], 422);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTH CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    $remittance = $this->localAuth($request->apikey);
+
+    if (!$remittance) {
+
+        return response()->json([
+            'status'  => false,
+            'message' => 'Unauthorized. Invalid API key.'
+        ], 401);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONTACT LIST
+    |--------------------------------------------------------------------------
+    */
+
+    $contacts = DB::table('payout_contacts')
+    ->where('remId', $remittance->remId)
+    ->where('userId', $request->userId)
+    ->orderBy('id', 'desc')
+    ->get()
+    ->map(function ($item) {
+
+        unset(
+            $item->requestBody,
+            $item->responseBody
+        );
+
+        return $item;
+    });
+
+    if ($contacts->isEmpty()) {
+
+        return response()->json([
+            'status' => false,
+            'message' => 'No contacts found.'
+        ], 404);
+    }
+
+    return response()->json([
+
+        'status' => true,
+
+        'message' => 'Contacts fetched successfully.',
+
+        'total_contacts' => $contacts->count(),
+
+        'data' => $contacts
+
+    ]);
 }
 }

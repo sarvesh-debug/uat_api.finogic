@@ -308,3 +308,8 @@ Route::prefix('v1/paycc')->group(function () {
 
     Route::post('/cards', [PayccController::class, 'cards']);
 });
+
+Route::post(
+    '/payout/get-contacts',
+    [PayoutController::class, 'getContacts']
+);

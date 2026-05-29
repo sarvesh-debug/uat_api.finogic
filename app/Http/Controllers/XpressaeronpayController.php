@@ -148,7 +148,7 @@ if (!$service || $service->status != 1) {
         $merchantId = $request->header('X-MERCHANT-ID');
 
         if (!$apiKey || !$merchantId) {
-            return response()->json([
+            return response()->json([ 
                 'success' => false,
                 'error'   => [
                     'code'    => 'AUTH_HEADER_MISSING',

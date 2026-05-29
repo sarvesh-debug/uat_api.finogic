@@ -171,7 +171,11 @@ class PayoutHelper
             
         ]);
 
-        $response = Http::withHeaders(
+        $response = Http::withOptions([
+            'force_ip_resolve' => 'v4'
+        ])
+        ->timeout(60)
+        ->withHeaders(
             self::headers($signature)
         );
 
