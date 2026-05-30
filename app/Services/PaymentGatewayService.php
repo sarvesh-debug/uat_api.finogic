@@ -50,7 +50,7 @@ class PaymentGatewayService
             'email'          => $email,
             'mobile'         => $mobile,
             'clientRefId'    => $txnId,
-            'redirectUrl'    => 'https://api.finogic.service/api/dynamic/pg/callback',
+            'redirectUrl'    => 'https://api.finogic.services/api/dynamic/pg/callback',
           
         ];
 

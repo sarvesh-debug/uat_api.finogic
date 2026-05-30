@@ -119,8 +119,13 @@ Route::post('/logs/view', [App\Http\Controllers\LogController::class, 'viewLogs'
 
 Route::post('dynamic/pg/request',[pgController::class,'pay']);
 Route::post('dynamic/pg/status', [pgController::class, 'status']);
-Route::post('dynamic/pg/callback', [pgController::class, 'callback']);
+// Route::post('dynamic/pg/callback', [pgController::class, 'callback']);
 
+Route::match(
+    ['GET', 'POST'],
+    'dynamic/pg/callback',
+    [pgController::class, 'callback']
+);
 
 Route::post('dynamic/v1/pg/request',[pg1Controller::class,'pay']);
 Route::post('dynamic/v1/pg/status', [pg1Controller::class, 'status']);

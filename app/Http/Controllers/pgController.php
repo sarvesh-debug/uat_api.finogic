@@ -82,7 +82,7 @@ class pgController extends Controller
         // 📌 Validate Input
         // ---------------------------------------------------------
         $validator = Validator::make($request->all(), [
-            'amount' => 'required|numeric|min:100',
+            'amount' => 'required|numeric|min:1',
             'pgType' => 'required|string|max:20',
             'RefNo'  => 'required|string|max:50',
             'callbackUrl' => 'nullable|string'
@@ -247,53 +247,127 @@ public function status(Request $request)
 
 public function callback(Request $request)
 {
-    Log::channel('fundtransfer')->info("PG CALLBACK RECEIVED", [
+try {
+
+
+    Log::channel('fundtransfer')->info('PG CALLBACK RECEIVED', [
+        'method'  => $request->method(),
         'payload' => $request->all(),
         'ip'      => $request->ip()
     ]);
 
-    // ---------------------------------------------------------
-    // Provider Response Mapping
-    // ---------------------------------------------------------
+    /*
+    |--------------------------------------------------------------------------
+    | REQUEST DATA
+    |--------------------------------------------------------------------------
+    */
 
-    $txnId      = $request->clientRefId ?? null;
-    $status     = strtoupper($request->status ?? 'FAILED');
-    $amount     = (float)($request->amount ?? 0);
-    $orderId    = $request->orderId ?? null;
-    $utr        = $request->utr ?? null;
-    $paymentId  = $request->paymentId ?? null;
-    $payMode    = $request->payMode ?? null;
+    $txnId      = $request->input('clientRefId');
+    $status     = strtoupper($request->input('status', 'FAILED'));
+    $amount     = (float) $request->input('amount', 0);
+    $orderId    = $request->input('orderId');
+    $utr        = $request->input('utr');
+    $paymentId  = $request->input('paymentId');
+    $payMode    = $request->input('payMode');
 
-    // ---------------------------------------------------------
-    // Fetch Transaction
-    // ---------------------------------------------------------
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (empty($txnId) && empty($orderId)) {
+
+        Log::channel('fundtransfer')->warning(
+            'Callback Missing Transaction Reference',
+            $request->all()
+        );
+
+        return response()->json([
+            'status'  => false,
+            'message' => 'Missing transaction reference'
+        ], 400);
+    }
+
+
+    //  $commissions = DB::table('commissions')
+        //     ->where('packagesId', $remittance->packageId)
+        //     ->where('service', 'PAYIN')
+        //     ->get();
+
+        // if ($commissions->isEmpty()) {
+        //     return response()->json([
+        //         'status'  => false,
+        //         'message' => 'No commission structure found for this package.'
+        //     ], 400);
+        // }
+
+        // // Find Slab Match (Amount Range)
+        // foreach ($commissions as $item) {
+
+        //     $from = (float)$item->from_amount;
+        //     $to   = (float)$item->to_amount;
+
+        //     if ($amount >= $from && $amount <= $to) {
+
+        //         // Charges
+        //         $charges = $item->charge_in === 'Percentage'
+        //             ? $amount * ((float)$item->charge) / 100
+        //             : (float)$item->charge;
+
+        //         // TDS
+        //         $tds = $item->tds_in === 'Percentage'
+        //             ? $charges * ((float)$item->tds) / 100
+        //             : (float)$item->tds;
+
+        //         break; // slab found
+        //     }
+        // }
+
+        // return $charges;
+
+    /*
+    |--------------------------------------------------------------------------
+    | FIND TRANSACTION
+    |--------------------------------------------------------------------------
+    */
 
     $txn = DB::table('pgmanage')
         ->where('orderId', $orderId)
+        ->orWhere('txnId', $txnId)
         ->first();
 
     if (!$txn) {
 
-        Log::channel('fundtransfer')->warning("PG CALLBACK → Transaction Not Found", [
-            'txnId'   => $txnId,
-            'orderId' => $orderId
-        ]);
+        Log::channel('fundtransfer')->warning(
+            'Transaction Not Found',
+            [
+                'orderId' => $orderId,
+                'txnId'   => $txnId
+            ]
+        );
 
         return response()->json([
             'status'  => false,
-            'message' => 'Transaction not found.'
+            'message' => 'Transaction not found'
         ], 404);
     }
 
-    // ---------------------------------------------------------
-    // Duplicate Protection
-    // ---------------------------------------------------------
+    /*
+    |--------------------------------------------------------------------------
+    | DUPLICATE PROTECTION
+    |--------------------------------------------------------------------------
+    */
 
     if ($txn->callback_processed == 1) {
 
-        Log::channel('fundtransfer')->warning("CALLBACK ALREADY PROCESSED", [
-            'orderId' => $orderId
-        ]);
+        Log::channel('fundtransfer')->info(
+            'Callback Already Processed',
+            [
+                'id'      => $txn->id,
+                'orderId' => $txn->orderId
+            ]
+        );
 
         return response()->json([
             'status'  => true,
@@ -301,9 +375,13 @@ public function callback(Request $request)
         ]);
     }
 
-    // ---------------------------------------------------------
-    // Update Transaction
-    // ---------------------------------------------------------
+    DB::beginTransaction();
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE TRANSACTION
+    |--------------------------------------------------------------------------
+    */
 
     DB::table('pgmanage')
         ->where('id', $txn->id)
@@ -312,62 +390,94 @@ public function callback(Request $request)
             'status'             => $status,
             'amount'             => $amount,
             'bank_ref_no'        => $utr,
-            'paymentId'          => $paymentId,
-            'responseData'       => json_encode($request->all(), JSON_UNESCAPED_SLASHES),
+            // 'paymentId'          => $paymentId,
+            'responseData'       => json_encode(
+                $request->all(),
+                JSON_UNESCAPED_SLASHES
+            ),
             'callback_processed' => 1,
             'updated_at'         => now()
         ]);
 
-    Log::channel('fundtransfer')->info("PG CALLBACK UPDATED", [
-        'txnId'  => $txnId,
-        'status' => $status
-    ]);
+    Log::channel('fundtransfer')->info(
+        'PG TRANSACTION UPDATED',
+        [
+            'txnId'     => $txnId,
+            'paymentId' => $paymentId,
+            'status'    => $status
+        ]
+    );
 
-    // ---------------------------------------------------------
-    // Prepare Payload
-    // ---------------------------------------------------------
+    /*
+    |--------------------------------------------------------------------------
+    | CALLBACK PAYLOAD
+    |--------------------------------------------------------------------------
+    */
 
     $payload = [
+
         'status'      => $status,
+
         'txnId'       => $txnId,
+
         'utr'         => $utr,
+
         'amount'      => $amount,
+
         'orderId'     => $orderId,
+
         'paymentId'   => $paymentId,
+
         'payMode'     => $payMode,
+
         'refId'       => $txn->refId,
+
         'message'     => $status === 'SUCCESS'
                             ? 'Payment Successful'
                             : 'Payment Failed'
     ];
 
-    // ---------------------------------------------------------
-    // Send POST Callback To Client
-    // ---------------------------------------------------------
+    /*
+    |--------------------------------------------------------------------------
+    | SEND CALLBACK TO CLIENT
+    |--------------------------------------------------------------------------
+    */
 
     if (!empty($txn->callbackUrl)) {
 
         try {
 
-            $response = Http::post($txn->callbackUrl, $payload);
+            $callbackResponse = Http::timeout(20)
+                ->post($txn->callbackUrl, $payload);
 
-            Log::channel('fundtransfer')->info("CLIENT CALLBACK SENT", [
-                'url'      => $txn->callbackUrl,
-                'payload'  => $payload,
-                'response' => $response->body()
-            ]);
+            Log::channel('fundtransfer')->info(
+                'CLIENT CALLBACK SENT',
+                [
+                    'url'         => $txn->callbackUrl,
+                    'payload'     => $payload,
+                    'status_code' => $callbackResponse->status(),
+                    'response'    => $callbackResponse->body()
+                ]
+            );
 
         } catch (\Exception $e) {
 
-            Log::channel('fundtransfer')->error("CLIENT CALLBACK FAILED", [
-                'error' => $e->getMessage()
-            ]);
+            Log::channel('fundtransfer')->error(
+                'CLIENT CALLBACK FAILED',
+                [
+                    'error' => $e->getMessage()
+                ]
+            );
         }
     }
 
-    // ---------------------------------------------------------
-    // Redirect User To Landing Page
-    // ---------------------------------------------------------
+    DB::commit();
+
+    /*
+    |--------------------------------------------------------------------------
+    | REDIRECT USER
+    |--------------------------------------------------------------------------
+    */
 
     if (!empty($txn->redirectUrl)) {
 
@@ -375,21 +485,50 @@ public function callback(Request $request)
 
         $params = http_build_query($payload);
 
-        Log::channel('fundtransfer')->info("REDIRECTING USER", [
-            'url' => $redirectUrl . '?' . $params
-        ]);
+        Log::channel('fundtransfer')->info(
+            'USER REDIRECT',
+            [
+                'url' => $redirectUrl . '?' . $params
+            ]
+        );
 
-        return redirect($redirectUrl . '?' . $params);
+        return redirect()->away(
+            $redirectUrl . '?' . $params
+        );
     }
 
-    // ---------------------------------------------------------
-    // Fallback Response
-    // ---------------------------------------------------------
+    /*
+    |--------------------------------------------------------------------------
+    | SUCCESS RESPONSE
+    |--------------------------------------------------------------------------
+    */
 
     return response()->json([
         'status'  => true,
-        'message' => 'Callback processed successfully'
-    ], 200);
+        'message' => 'Callback processed successfully',
+        'data'    => $payload
+    ]);
+
+} catch (\Exception $e) {
+
+    DB::rollBack();
+
+    Log::channel('fundtransfer')->error(
+        'PG CALLBACK ERROR',
+        [
+            'message' => $e->getMessage(),
+            'line'    => $e->getLine(),
+            'file'    => $e->getFile()
+        ]
+    );
+
+    return response()->json([
+        'status'  => false,
+        'message' => $e->getMessage()
+    ], 500);
+}
+
+
 }
 
 

@@ -17,6 +17,8 @@ class IPayCallbacksController extends Controller
 
     public function callback(Request $request)
     {
+        
+       // return $request;
         /*
         |--------------------------------------------------------------------------
         | LOG CALLBACK REQUEST
@@ -141,7 +143,7 @@ class IPayCallbacksController extends Controller
             */
 
             $transaction = DB::table('xpresspayout')
-                ->where('bank_ref_no', $orderRefId)
+                ->where('payment_id', $clientRefId)
                 ->first();
 
             /*
@@ -350,23 +352,86 @@ class IPayCallbacksController extends Controller
                     );
 
                 } 
-                elseif($event=='paycc.request.success')
+               
+                else {
+
+                    Log::warning(
+                        "Merchant Callback URL Missing",
+                        [
+                            'remId' => $transaction->remId
+                        ]
+                    );
+                }
+
+                DB::commit();
+
+                /*
+                |--------------------------------------------------------------------------
+                | FINAL SUCCESS RESPONSE
+                |--------------------------------------------------------------------------
+                */
+
+                return response()->json([
+
+                    'status'  => true,
+
+                    'message' => 'Callback processed successfully'
+                ], 200);
+
+            } catch (\Exception $e) {
+
+                DB::rollBack();
+
+                Log::error("Payout Callback Processing Error", [
+
+                    'error'        => $e->getMessage(),
+
+                    'orderRefId'   => $orderRefId,
+
+                    'clientRefId'  => $clientRefId,
+
+                    'payload'      => $callbackData
+                ]);
+
+                return response()->json([
+
+                    'status'  => false,
+
+                    'message' => 'Callback processing failed',
+
+                    'error'   => $e->getMessage()
+
+                ], 500);
+            }
+        }
+
+
+        elseif($event=='paycc.request.success')
                     {
+                        
+                        //return $request;
+                       
                          Log::channel('fundtransfer')->info("PG CALLBACK RECEIVED", [
                             'payload' => $request->all(),
                             'ip'      => $request->ip()
                         ]);
+                            
+                            $data = $callbackData['data'] ?? [];
+                            
+                             $orderRefId   = $data['orderRefId'] ?? null;
 
+                              $clientRefId  = $data['clientRefId'] ?? null;
                         // ---------------------------------------------------------
                         // Map webhook fields
                         // ---------------------------------------------------------
 
-                        $txnId   = $request->clientRefId ?? null;
-                        $status  = $request->code ?? 'FAILED';
-                        $amount  = (float)($request->amount ?? 0);
-                        $orderId = $request->orderId ?? null;
-                        $utr     = $request->utr ?? null;
-
+                        $txnId   =  $data['clientRefId'] ?? null;
+                        $status  = 'success';
+                        $amount  = (float)($data['amount']  ?? 0);
+                        $orderId = $data['orderId'] ?? null;
+                        $utr     = $data['utr'] ?? null;
+                        
+                     //return $txnId;
                         // ---------------------------------------------------------
                         // Fetch Transaction
                         // ---------------------------------------------------------
@@ -438,8 +503,9 @@ class IPayCallbacksController extends Controller
                                     'txnId'    => $txnId,
                                     'orderId'  => $orderId,
                                     'amount'   => $amount,
+                                    'utr'   => $utr,
                                     'status'   => 'SUCCESS',
-                                    'settlement_status' => 'NON-SETTLED', // 🔥 KEY
+                                    'settlement_status' => 'SETTLED', // 🔥 KEY
                                     'message'  => 'Payment Received, Settlement Pending'
                                 ];
 
@@ -474,57 +540,6 @@ class IPayCallbacksController extends Controller
                             'message' => 'Callback received successfully'
                         ], 200);
                     }
-                else {
-
-                    Log::warning(
-                        "Merchant Callback URL Missing",
-                        [
-                            'remId' => $transaction->remId
-                        ]
-                    );
-                }
-
-                DB::commit();
-
-                /*
-                |--------------------------------------------------------------------------
-                | FINAL SUCCESS RESPONSE
-                |--------------------------------------------------------------------------
-                */
-
-                return response()->json([
-
-                    'status'  => true,
-
-                    'message' => 'Callback processed successfully'
-                ], 200);
-
-            } catch (\Exception $e) {
-
-                DB::rollBack();
-
-                Log::error("Payout Callback Processing Error", [
-
-                    'error'        => $e->getMessage(),
-
-                    'orderRefId'   => $orderRefId,
-
-                    'clientRefId'  => $clientRefId,
-
-                    'payload'      => $callbackData
-                ]);
-
-                return response()->json([
-
-                    'status'  => false,
-
-                    'message' => 'Callback processing failed',
-
-                    'error'   => $e->getMessage()
-
-                ], 500);
-            }
-        }
 
         /*
         |--------------------------------------------------------------------------
@@ -547,4 +562,5 @@ class IPayCallbacksController extends Controller
 
         ], 400);
     }
+    
 }

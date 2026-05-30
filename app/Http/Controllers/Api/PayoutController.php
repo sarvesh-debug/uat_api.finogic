@@ -682,7 +682,7 @@ public function createOrder(Request $request)
         $bankResponse = $this->payoutService
             ->createOrder($contactRequest);
 
-            return $bankResponse;
+           // return $bankResponse;
 
         Log::channel('fundtransfer')->info(
             "Payout Response Received",
@@ -727,10 +727,10 @@ public function createOrder(Request $request)
                 ->update([
 
                     'bank_ref_no' =>
-                        $bankResponse['data']['orderRefId'] ?? null,
+                        $bankResponse['data']['urt'] ?? null,
 
                     'orderId' =>
-                        $bankResponse['data']['clientRefId'] ?? null,
+                       $bankResponse['data']['orderRefId'] ?? null,
 
                     'status' =>
                         $finalStatus,
