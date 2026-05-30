@@ -266,6 +266,10 @@ Route::prefix('aeps')->group(function () {
 
     Route::post('/2fa', [aespIPContoller::class, 'twoFactorAuth']);
 
+    Route::post('/send-otp', [aespIPContoller::class, 'sendOTP']);
+    Route::post('/validate-otp', [aespIPContoller::class, 'validateOTP']);
+    Route::post('/ekyc-biometric', [aespIPContoller::class, 'ekycBioMetric']);
+
     Route::post('/cash-withdrawal', [aespIPContoller::class, 'cashWithdrawal']);
 
     Route::post('/balance-enquiry', [aespIPContoller::class, 'balanceEnquiry']);

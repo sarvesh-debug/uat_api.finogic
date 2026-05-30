@@ -381,7 +381,7 @@ public function export(Request $request)
         return $value !== null && $value !== '';
     });
 
-    $response = Http::get('https://api.Finogic.in/api/v1/all/summary', $query);
+    $response = Http::get('https://api.finogic.services/api/v1/all/summary', $query);
 
     $data = $response->json();
 

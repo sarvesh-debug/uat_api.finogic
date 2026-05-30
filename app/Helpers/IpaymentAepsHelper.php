@@ -105,6 +105,38 @@ class IpaymentHelper
         );
     }
 
+     /*
+    |--------------------------------------------------------------------------
+    | E-KYC
+    |--------------------------------------------------------------------------
+    */
+
+
+     public static function sendOTP($data)
+    {
+        return self::request(
+            'POST',
+            '/v1/service/aeps/sendOTP',
+        );
+    }
+
+     public static function validateOTP($data)
+    {
+        return self::request(
+            'POST',
+            '/v1/service/aeps/validateOTP',
+        );
+    }
+
+     public static function ekycBioMetric($data)
+    {
+        return self::request(
+            'POST',
+            '/v1/service/aeps/ekycBioMetric' ,
+        );
+    }
+
+
     /*
     |--------------------------------------------------------------------------
     | 2FA
@@ -115,7 +147,7 @@ class IpaymentHelper
     {
         return self::request(
             'POST',
-            '/v1/service/aeps/airtel/2fa',
+            ' /v1/service/aeps/2fa',
             $data
         );
     }
@@ -126,7 +158,35 @@ class IpaymentHelper
     |--------------------------------------------------------------------------
     */
 
-    public static function aepsTransaction($data)
+    public static function withdrawal($data)
+    {
+        return self::request(
+            'POST',
+            '/v1/service/aeps/withdrawal',
+            $data
+        );
+    }
+
+     public static function getBalance($data)
+    {
+        return self::request(
+            'POST',
+            '/v1/service/aeps/getBalance',
+            $data
+        );
+    }
+
+
+     public static function statement($data)
+    {
+        return self::request(
+            'POST',
+            '/v1/service/aeps/statement',
+            $data
+        );
+    }
+
+     public static function aepsTransaction($data)
     {
         return self::request(
             'POST',

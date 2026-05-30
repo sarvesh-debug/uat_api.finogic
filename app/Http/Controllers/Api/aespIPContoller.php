@@ -340,7 +340,203 @@ public function merchantKycStatus(Request $request, $kid)
         'data' => $api['data']
     ]);
 }
+//kyc
 
+public function sendOTP(Request $request)
+{
+    $requestId = 'req_' . Str::uuid();
+
+    // ✅ Auth Validation
+    $authCheck = $this->validateAuth($request, $requestId);
+
+    if ($authCheck instanceof JsonResponse) {
+        return $authCheck;
+    }
+
+    // ✅ Validation
+    $validator = Validator::make($request->all(), [
+        'pan' => 'required',
+        'aadhaar'       => 'required',
+        'latitude'        => 'required',
+        'longitude'       => 'required',
+        'mobile'           =>'required',
+    ]);
+
+    if ($validator->fails()) {
+
+        return response()->json([
+            'status'    => false,
+            'code'      => 422,
+            'requestId' => $requestId,
+            'message'   => 'Validation Error',
+            'errors'    => $validator->errors()
+        ], 422);
+    }
+
+    // ✅ Payload
+    $payload = [
+        "pan" => $request->pan,
+        "aadhaar"       => $request->aadhaar,
+        "latitude"        => $request->latitude,
+        "longitude"       => $request->longitude,
+        "mobile"       => $request->mobile,
+    ];
+
+    // ✅ Request Log
+    Log::info('AEPS KYC Request', [
+        'requestId' => $requestId,
+        'payload'   => $payload
+    ]);
+
+    // ✅ API Call
+    $api = IpaymentAepsHelper::sendOTP($payload);
+
+    // ✅ Response Log
+    Log::info('AEPS KYC Response', [
+        'requestId' => $requestId,
+        'response'  => $api
+    ]);
+
+    // ✅ Final Response
+    return response()->json([
+        'status'    => $api['status'],
+        'code'      => $api['code'],
+        'message'   => $api['message'],
+        'requestId' => $requestId,
+        'data'      => $api['data'] ?? []
+    ]);
+}
+
+
+
+public function validateOTP(Request $request)
+{
+    $requestId = 'req_' . Str::uuid();
+
+    // ✅ Auth Validation
+    $authCheck = $this->validateAuth($request, $requestId);
+
+    if ($authCheck instanceof JsonResponse) {
+        return $authCheck;
+    }
+
+    // ✅ Validation
+    $validator = Validator::make($request->all(), [
+        'otp' => 'required',
+        'primaryKeyId'       => 'required',
+        'latitude'        => 'required',
+        'longitude'       => 'required',
+        'encodeFPTxnId'           =>'required',
+    ]);
+
+    if ($validator->fails()) {
+
+        return response()->json([
+            'status'    => false,
+            'code'      => 422,
+            'requestId' => $requestId,
+            'message'   => 'Validation Error',
+            'errors'    => $validator->errors()
+        ], 422);
+    }
+
+    // ✅ Payload
+    $payload = [
+        "otp" => $request->otp,
+        "primaryKeyId"       => $request->primaryKeyId,
+        "latitude"        => $request->latitude,
+        "longitude"       => $request->longitude,
+        "encodeFPTxnId"       => $request->encodeFPTxnId,
+    ];
+
+    // ✅ Request Log
+    Log::info('AEPS KYC Request', [
+        'requestId' => $requestId,
+        'payload'   => $payload
+    ]);
+
+    // ✅ API Call
+    $api = IpaymentAepsHelper::validateOTP($payload);
+
+    // ✅ Response Log
+    Log::info('AEPS KYC Response', [
+        'requestId' => $requestId,
+        'response'  => $api
+    ]);
+
+    // ✅ Final Response
+    return response()->json([
+        'status'    => $api['status'],
+        'code'      => $api['code'],
+        'message'   => $api['message'],
+        'requestId' => $requestId,
+        'data'      => $api['data'] ?? []
+    ]);
+}
+
+
+public function ekycBioMetric(Request $request)
+{
+    $requestId = 'req_' . Str::uuid();
+
+    // ✅ Auth Validation
+    $authCheck = $this->validateAuth($request, $requestId);
+
+    if ($authCheck instanceof JsonResponse) {
+        return $authCheck;
+    }
+
+    // ✅ Validation
+    $validator = Validator::make($request->all(), [
+        'primaryKeyId' => 'required',
+        'rdRequest'       => 'required',
+        'encodeFPTxnId'        => 'required',
+       
+    ]);
+
+    if ($validator->fails()) {
+
+        return response()->json([
+            'status'    => false,
+            'code'      => 422,
+            'requestId' => $requestId,
+            'message'   => 'Validation Error',
+            'errors'    => $validator->errors()
+        ], 422);
+    }
+
+    // ✅ Payload
+    $payload = [
+        "primaryKeyId" => $request->primaryKeyId,
+        "rdRequest"       => $request->rdRequest,
+        "encodeFPTxnId"        => $request->encodeFPTxnId,
+        
+    ];
+
+    // ✅ Request Log
+    Log::info('AEPS 2FA Request', [
+        'requestId' => $requestId,
+        'payload'   => $payload
+    ]);
+
+    // ✅ API Call
+    $api = IpaymentAepsHelper::twoFactorAuth($payload);
+
+    // ✅ Response Log
+    Log::info('AEPS 2FA Response', [
+        'requestId' => $requestId,
+        'response'  => $api
+    ]);
+
+    // ✅ Final Response
+    return response()->json([
+        'status'    => $api['status'],
+        'code'      => $api['code'],
+        'message'   => $api['message'],
+        'requestId' => $requestId,
+        'data'      => $api['data'] ?? []
+    ]);
+}
 
 
 //2FA
@@ -406,6 +602,8 @@ public function twoFactorAuth(Request $request)
         'data'      => $api['data'] ?? []
     ]);
 }
+
+
 
 public function cashWithdrawal(Request $request)
 {
@@ -594,7 +792,18 @@ private function aepsTxn(Request $request, $type)
         'payload' => $payload
     ]);
 
-    $api = IpaymentAepsHelper::aepsTransaction($payload);
+    if($type=='cw')
+        {
+             $api = IpaymentAepsHelper::withdrawal($payload);
+        }
+    elseif($type=='be')
+        {
+             $api = IpaymentAepsHelper::getBalance($payload);
+        }
+    else{
+             $api = IpaymentAepsHelper::statement($payload);
+    }
+    //$api = IpaymentAepsHelper::aepsTransaction($payload);
 
     Log::info('AEPS Transaction Response', [
         'requestId' => $requestId,
